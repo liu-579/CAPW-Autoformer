@@ -1,0 +1,151 @@
+2025-11-28 11:24:26,385 - DatasetBuilder - INFO - 数据集构建器初始化完成
+2025-11-28 11:24:26,386 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:24:26,386 - DatasetBuilder - INFO - 开始构建数据集
+2025-11-28 11:24:26,386 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:24:26,386 - DatasetBuilder - INFO - 
+步骤1: 加载数据...
+2025-11-28 11:24:26,408 - DatasetBuilder - INFO - ✓ 加载评论数: 2637
+2025-11-28 11:24:26,409 - DatasetBuilder - INFO - ✓ 加载评分数: 2637
+2025-11-28 11:24:26,409 - DatasetBuilder - INFO - 
+步骤2: 对齐评论与情感分数...
+2025-11-28 11:24:26,476 - DatasetBuilder - INFO - ✓ 成功对齐数据: 0 条
+2025-11-28 11:24:26,476 - DatasetBuilder - INFO - 
+步骤3: 数据质量检查...
+2025-11-28 11:24:26,476 - DatasetBuilder - INFO - ✓ 质量检查完成，所有数据合法
+2025-11-28 11:24:26,476 - DatasetBuilder - INFO - 
+步骤4: 划分训练集、验证集、测试集...
+2025-11-28 11:30:00,570 - DatasetBuilder - INFO - 数据集构建器初始化完成
+2025-11-28 11:30:00,570 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:30:00,570 - DatasetBuilder - INFO - 开始构建数据集
+2025-11-28 11:30:00,570 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:30:00,570 - DatasetBuilder - INFO - 
+步骤1: 加载数据...
+2025-11-28 11:30:00,591 - DatasetBuilder - INFO - 评分数据格式: 列表
+2025-11-28 11:30:00,591 - DatasetBuilder - INFO - ✓ 加载评论数: 2637
+2025-11-28 11:30:00,591 - DatasetBuilder - INFO - ✓ 加载评分数: 2637
+2025-11-28 11:30:00,591 - DatasetBuilder - INFO - 评论示例ID: review_000000
+2025-11-28 11:30:00,591 - DatasetBuilder - INFO - 评分示例ID: review_000000
+2025-11-28 11:30:00,591 - DatasetBuilder - INFO - 评分包含 'scores' 子对象
+2025-11-28 11:30:00,591 - DatasetBuilder - INFO - 
+步骤2: 对齐评论与情感分数...
+2025-11-28 11:30:00,594 - DatasetBuilder - INFO - ✓ 成功对齐数据: 2637 条
+2025-11-28 11:30:00,594 - DatasetBuilder - INFO - 
+步骤3: 数据质量检查...
+2025-11-28 11:30:00,595 - DatasetBuilder - INFO - ✓ 质量检查完成，所有数据合法
+2025-11-28 11:30:00,595 - DatasetBuilder - INFO - 
+步骤4: 划分训练集、验证集、测试集...
+2025-11-28 11:30:00,596 - DatasetBuilder - INFO - ✓ 训练集: 2109 条
+2025-11-28 11:30:00,596 - DatasetBuilder - INFO - ✓ 验证集: 264 条
+2025-11-28 11:30:00,596 - DatasetBuilder - INFO - ✓ 测试集: 264 条
+2025-11-28 11:30:00,596 - DatasetBuilder - INFO - 
+步骤5: 保存数据集...
+2025-11-28 11:30:00,612 - DatasetBuilder - INFO - ✓ 完整数据集已保存: data\dataset_v1\dataset_v1.jsonl
+2025-11-28 11:30:00,626 - DatasetBuilder - INFO - ✓ train.csv 已保存: ./data/dataset_v1/train.csv
+2025-11-28 11:30:00,628 - DatasetBuilder - INFO - ✓ val.csv 已保存: ./data/dataset_v1/val.csv
+2025-11-28 11:30:00,630 - DatasetBuilder - INFO - ✓ test.csv 已保存: ./data/dataset_v1/test.csv
+2025-11-28 11:30:00,630 - DatasetBuilder - INFO - 
+步骤6: 计算统计信息...
+2025-11-28 11:30:00,636 - DatasetBuilder - INFO - 
+步骤7: 生成数据卡...
+2025-11-28 11:30:00,636 - DatasetBuilder - INFO - ✓ 数据卡已生成: data\dataset_v1\data_card.md
+2025-11-28 11:30:00,636 - DatasetBuilder - INFO - 
+步骤8: 创建压缩包...
+2025-11-28 11:30:00,675 - DatasetBuilder - INFO - ✓ 压缩包已创建: data\dataset_v1.zip
+2025-11-28 11:30:00,675 - DatasetBuilder - INFO - 
+============================================================
+2025-11-28 11:30:00,675 - DatasetBuilder - INFO - 数据集构建完成！
+2025-11-28 11:30:00,675 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:32:10,678 - DatasetBuilder - INFO - 数据集构建器初始化完成
+2025-11-28 11:32:10,679 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:32:10,679 - DatasetBuilder - INFO - 开始构建数据集
+2025-11-28 11:32:10,679 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:32:10,679 - DatasetBuilder - INFO - 
+步骤1: 加载数据...
+2025-11-28 11:32:10,699 - DatasetBuilder - INFO - 评分数据格式: 列表
+2025-11-28 11:32:10,699 - DatasetBuilder - INFO - ✓ 加载评论数: 2637
+2025-11-28 11:32:10,699 - DatasetBuilder - INFO - ✓ 加载评分数: 2637
+2025-11-28 11:32:10,699 - DatasetBuilder - INFO - 评论示例ID: review_000000
+2025-11-28 11:32:10,699 - DatasetBuilder - INFO - 评分示例ID: review_000000
+2025-11-28 11:32:10,699 - DatasetBuilder - INFO - 评分包含 'scores' 子对象
+2025-11-28 11:32:10,699 - DatasetBuilder - INFO - 
+步骤2: 对齐评论与情感分数...
+2025-11-28 11:32:10,702 - DatasetBuilder - INFO - ✓ 成功对齐数据: 2637 条
+2025-11-28 11:32:10,702 - DatasetBuilder - INFO - 
+步骤3: 数据质量检查...
+2025-11-28 11:32:10,704 - DatasetBuilder - INFO - ✓ 质量检查完成，所有数据合法
+2025-11-28 11:32:10,704 - DatasetBuilder - INFO - 
+步骤4: 划分训练集、验证集、测试集...
+2025-11-28 11:32:10,705 - DatasetBuilder - INFO - ✓ 训练集: 2109 条
+2025-11-28 11:32:10,705 - DatasetBuilder - INFO - ✓ 验证集: 264 条
+2025-11-28 11:32:10,705 - DatasetBuilder - INFO - ✓ 测试集: 264 条
+2025-11-28 11:32:10,705 - DatasetBuilder - INFO - 
+步骤5: 保存数据集...
+2025-11-28 11:32:10,719 - DatasetBuilder - INFO - ✓ 完整数据集已保存: D:\learning\shiyan1\data\输出\dataset_v1\dataset_v1.jsonl
+2025-11-28 11:32:38,342 - DatasetBuilder - INFO - 数据集构建器初始化完成
+2025-11-28 11:32:38,342 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:32:38,342 - DatasetBuilder - INFO - 开始构建数据集
+2025-11-28 11:32:38,342 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:32:38,342 - DatasetBuilder - INFO - 
+步骤1: 加载数据...
+2025-11-28 11:32:38,361 - DatasetBuilder - INFO - 评分数据格式: 列表
+2025-11-28 11:32:38,362 - DatasetBuilder - INFO - ✓ 加载评论数: 2637
+2025-11-28 11:32:38,362 - DatasetBuilder - INFO - ✓ 加载评分数: 2637
+2025-11-28 11:32:38,362 - DatasetBuilder - INFO - 评论示例ID: review_000000
+2025-11-28 11:32:38,362 - DatasetBuilder - INFO - 评分示例ID: review_000000
+2025-11-28 11:32:38,362 - DatasetBuilder - INFO - 评分包含 'scores' 子对象
+2025-11-28 11:32:38,362 - DatasetBuilder - INFO - 
+步骤2: 对齐评论与情感分数...
+2025-11-28 11:32:38,364 - DatasetBuilder - INFO - ✓ 成功对齐数据: 2637 条
+2025-11-28 11:32:38,364 - DatasetBuilder - INFO - 
+步骤3: 数据质量检查...
+2025-11-28 11:32:38,366 - DatasetBuilder - INFO - ✓ 质量检查完成，所有数据合法
+2025-11-28 11:32:38,366 - DatasetBuilder - INFO - 
+步骤4: 划分训练集、验证集、测试集...
+2025-11-28 11:32:38,367 - DatasetBuilder - INFO - ✓ 训练集: 2109 条
+2025-11-28 11:32:38,367 - DatasetBuilder - INFO - ✓ 验证集: 264 条
+2025-11-28 11:32:38,367 - DatasetBuilder - INFO - ✓ 测试集: 264 条
+2025-11-28 11:32:38,367 - DatasetBuilder - INFO - 
+步骤5: 保存数据集...
+2025-11-28 11:32:38,382 - DatasetBuilder - INFO - ✓ 完整数据集已保存: D:\learning\shiyan1\data\输出\dataset_v1\dataset_v1.jsonl
+2025-11-28 11:32:58,229 - DatasetBuilder - INFO - 数据集构建器初始化完成
+2025-11-28 11:32:58,229 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:32:58,229 - DatasetBuilder - INFO - 开始构建数据集
+2025-11-28 11:32:58,229 - DatasetBuilder - INFO - ============================================================
+2025-11-28 11:32:58,229 - DatasetBuilder - INFO - 
+步骤1: 加载数据...
+2025-11-28 11:32:58,257 - DatasetBuilder - INFO - 评分数据格式: 列表
+2025-11-28 11:32:58,258 - DatasetBuilder - INFO - ✓ 加载评论数: 2637
+2025-11-28 11:32:58,258 - DatasetBuilder - INFO - ✓ 加载评分数: 2637
+2025-11-28 11:32:58,258 - DatasetBuilder - INFO - 评论示例ID: review_000000
+2025-11-28 11:32:58,258 - DatasetBuilder - INFO - 评分示例ID: review_000000
+2025-11-28 11:32:58,258 - DatasetBuilder - INFO - 评分包含 'scores' 子对象
+2025-11-28 11:32:58,258 - DatasetBuilder - INFO - 
+步骤2: 对齐评论与情感分数...
+2025-11-28 11:32:58,260 - DatasetBuilder - INFO - ✓ 成功对齐数据: 2637 条
+2025-11-28 11:32:58,260 - DatasetBuilder - INFO - 
+步骤3: 数据质量检查...
+2025-11-28 11:32:58,261 - DatasetBuilder - INFO - ✓ 质量检查完成，所有数据合法
+2025-11-28 11:32:58,261 - DatasetBuilder - INFO - 
+步骤4: 划分训练集、验证集、测试集...
+2025-11-28 11:32:58,264 - DatasetBuilder - INFO - ✓ 训练集: 2109 条
+2025-11-28 11:32:58,264 - DatasetBuilder - INFO - ✓ 验证集: 264 条
+2025-11-28 11:32:58,264 - DatasetBuilder - INFO - ✓ 测试集: 264 条
+2025-11-28 11:32:58,264 - DatasetBuilder - INFO - 
+步骤5: 保存数据集...
+2025-11-28 11:32:58,276 - DatasetBuilder - INFO - ✓ 完整数据集已保存: D:\learning\shiyan1\data\输出\dataset_v1\dataset_v1.jsonl
+2025-11-28 11:32:58,287 - DatasetBuilder - INFO - ✓ train.csv 已保存: D:\learning\shiyan1\data\输出\dataset_v1/train.csv
+2025-11-28 11:32:58,289 - DatasetBuilder - INFO - ✓ val.csv 已保存: D:\learning\shiyan1\data\输出\dataset_v1/val.csv
+2025-11-28 11:32:58,291 - DatasetBuilder - INFO - ✓ test.csv 已保存: D:\learning\shiyan1\data\输出\dataset_v1/test.csv
+2025-11-28 11:32:58,291 - DatasetBuilder - INFO - 
+步骤6: 计算统计信息...
+2025-11-28 11:32:58,296 - DatasetBuilder - INFO - 
+步骤7: 生成数据卡...
+2025-11-28 11:32:58,296 - DatasetBuilder - INFO - ✓ 数据卡已生成: D:\learning\shiyan1\data\输出\data_card.md
+2025-11-28 11:32:58,296 - DatasetBuilder - INFO - 
+步骤8: 创建压缩包...
+2025-11-28 11:32:58,336 - DatasetBuilder - WARNING - 文件不存在，跳过: D:\learning\shiyan1\data\输出\dataset_v1\data_card.md
+2025-11-28 11:32:58,337 - DatasetBuilder - INFO - ✓ 压缩包已创建: D:\learning\shiyan1\data\输出\dataset_v1.zip
+2025-11-28 11:32:58,337 - DatasetBuilder - INFO - 
+============================================================
+2025-11-28 11:32:58,337 - DatasetBuilder - INFO - 数据集构建完成！
+2025-11-28 11:32:58,337 - DatasetBuilder - INFO - ============================================================
