@@ -1,7 +1,7 @@
 # scripts/m4_train_baseline.py
 """
 模块 4：基线模型微调脚本
-使用HuggingFace Transformers训练多维情感回归模型
+使用HuggingFace Transformers训练多维情感回归模型（离散等级输出）
 """
 
 import sys
@@ -38,12 +38,54 @@ from config.m4_config import BaselineConfig as Config
 warnings.filterwarnings('ignore')
 
 
+# ==================== 新增：离散化工具函数 ====================
+def normalize_labels(labels: np.ndarray) -> np.ndarray:
+    """
+    将离散标签归一化到[0,1]区间
+    -2 → 0.0, -1 → 0.25, 0 → 0.5, 1 → 0.75, 2 → 1.0
+    """
+    mapping = {-2: 0.0, -1: 0.25, 0: 0.5, 1: 0.75, 2: 1.0}
+    normalized = np.zeros_like(labels, dtype=np.float32)
+    for orig, norm in mapping.items():
+        normalized[labels == orig] = norm
+    return normalized
+
+
+def denormalize_predictions(predictions: np.ndarray) -> np.ndarray:
+    """
+    将[0,1]区间的预测值反归一化到[-2,2]区间
+    0.0 → -2, 0.25 → -1, 0.5 → 0, 0.75 → 1, 1.0 → 2
+    """
+    return predictions * 4 - 2
+
+
+def discretize_predictions(predictions: np.ndarray) -> np.ndarray:
+    """
+    将连续预测值离散化到最近的等级 {-2, -1, 0, 1, 2}
+    """
+    denormalized = denormalize_predictions(predictions)
+    discretized = np.round(denormalized).astype(np.int32)
+    discretized = np.clip(discretized, -2, 2)  # 确保在有效范围内
+    return discretized
+
+
+def calculate_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    计算离散化后的准确率（完全匹配）
+    y_true: 原始标签 (-2到2)
+    y_pred: 连续预测值 (0到1)
+    """
+    y_pred_discrete = discretize_predictions(y_pred)
+    return np.mean(y_true == y_pred_discrete)
+
+
 class SentimentDataset(Dataset):
     """情感分析数据集"""
 
     def __init__(self, texts: List[str], labels: np.ndarray, tokenizer, max_length: int):
         self.texts = texts
-        self.labels = labels
+        # 归一化标签到[0,1]
+        self.labels = normalize_labels(labels)
         self.tokenizer = tokenizer
         self.max_length = max_length
 
@@ -141,7 +183,7 @@ class BaselineTrainer:
         Config.create_dirs()
 
         self.logger.info("=" * 80)
-        self.logger.info("模块 4：基线模型微调")
+        self.logger.info("模块 4：基线模型微调（离散等级输出）")
         self.logger.info("=" * 80)
         Config.print_config()
 
@@ -205,6 +247,16 @@ class BaselineTrainer:
             if missing:
                 raise ValueError(f"{df_name}.csv 缺少字段: {missing}")
 
+        # 验证标签值是否在有效范围内
+        for df_name, df in [('train', train_df), ('val', val_df), ('test', test_df)]:
+            for dim in Config.DIMENSIONS:
+                unique_vals = df[dim].unique()
+                invalid = set(unique_vals) - {-2, -1, 0, 1, 2}
+                if invalid:
+                    raise ValueError(f"{df_name}.csv 的 {dim} 列包含无效值: {invalid}，应为 -2,-1,0,1,2")
+
+        self.logger.info("✓ 标签验证通过：所有维度均为 {-2, -1, 0, 1, 2}")
+
         return train_df, val_df, test_df
 
     def create_dataloaders(
@@ -223,10 +275,17 @@ class BaselineTrainer:
         val_texts = val_df['text'].tolist()
         test_texts = test_df['text'].tolist()
 
+        # 原始标签（-2到2）
         train_labels = train_df[Config.DIMENSIONS].values
         val_labels = val_df[Config.DIMENSIONS].values
         test_labels = test_df[Config.DIMENSIONS].values
 
+        # 保存原始标签供评估使用
+        self.train_labels_original = train_labels
+        self.val_labels_original = val_labels
+        self.test_labels_original = test_labels
+
+        # Dataset内部会自动归一化
         train_dataset = SentimentDataset(train_texts, train_labels, self.tokenizer, Config.MAX_LENGTH)
         val_dataset = SentimentDataset(val_texts, val_labels, self.tokenizer, Config.MAX_LENGTH)
         test_dataset = SentimentDataset(test_texts, test_labels, self.tokenizer, Config.MAX_LENGTH)
@@ -237,6 +296,7 @@ class BaselineTrainer:
 
         self.logger.info(f"✓ 批次大小: {Config.BATCH_SIZE}")
         self.logger.info(f"✓ 训练批次数: {len(train_loader)}")
+        self.logger.info(f"✓ 标签归一化: -2,-1,0,1,2 → 0,0.25,0.5,0.75,1.0")
 
         return train_loader, val_loader, test_loader
 
@@ -302,7 +362,8 @@ class BaselineTrainer:
             'model_name': Config.MODEL_NAME,
             'num_labels': Config.NUM_LABELS,
             'dropout': Config.HIDDEN_DROPOUT,
-            'best_pearsonr': metrics.get('avg_pearsonr', -1)
+            'best_pearsonr': metrics.get('avg_pearsonr', -1),
+            'best_accuracy': metrics.get('avg_accuracy', 0)
         }
 
         # 保存最新检查点
@@ -321,7 +382,10 @@ class BaselineTrainer:
         if is_best:
             best_path = Config.CHECKPOINT_DIR / 'best_checkpoint.pt'
             torch.save(checkpoint, best_path)
-            self.logger.info(f"✓ 最佳检查点已保存 (Pearsonr: {metrics.get('avg_pearsonr', -1):.3f})")
+            self.logger.info(
+                f"✓ 最佳检查点已保存 (Pearsonr: {metrics.get('avg_pearsonr', -1):.3f}, "
+                f"Accuracy: {metrics.get('avg_accuracy', 0):.3f})"
+            )
 
         # 清理旧检查点
         if Config.KEEP_CHECKPOINT_MAX is not None:
@@ -385,13 +449,15 @@ class BaselineTrainer:
         self.logger.info(f"✓ 从 Epoch {epoch} 恢复训练")
         if metrics:
             self.logger.info(f"  - 验证集 Pearsonr: {metrics.get('avg_pearsonr', 'N/A'):.3f}")
+            self.logger.info(f"  - 验证集 Accuracy: {metrics.get('avg_accuracy', 'N/A'):.3f}")
             self.logger.info(f"  - 验证集 RMSE: {metrics.get('avg_rmse', 'N/A'):.3f}")
             self.logger.info(f"  - 验证集 MAE: {metrics.get('avg_mae', 'N/A'):.3f}")
 
         return {
             'epoch': epoch,
             'metrics': metrics,
-            'best_pearsonr': checkpoint.get('best_pearsonr', -1)
+            'best_pearsonr': checkpoint.get('best_pearsonr', -1),
+            'best_accuracy': checkpoint.get('best_accuracy', 0)
         }
 
     def train_epoch(self, model: nn.Module, train_loader: DataLoader, optimizer: AdamW, scheduler: any, epoch: int) -> \
@@ -428,12 +494,14 @@ class BaselineTrainer:
 
         all_preds = np.vstack(all_preds)
         all_labels = np.vstack(all_labels)
-        metrics = self._calculate_metrics(all_labels, all_preds)
+
+        # 计算指标（使用归一化后的连续值）
+        metrics = self._calculate_metrics(all_labels, all_preds, self.train_labels_original)
         metrics['loss'] = total_loss / len(train_loader)
 
         return metrics
 
-    def evaluate(self, model: nn.Module, data_loader: DataLoader) -> Dict[str, float]:
+    def evaluate(self, model: nn.Module, data_loader: DataLoader, original_labels: np.ndarray) -> Dict[str, float]:
         """评估模型"""
         model.eval()
         all_preds = []
@@ -453,54 +521,77 @@ class BaselineTrainer:
         all_preds = np.vstack(all_preds)
         all_labels = np.vstack(all_labels)
 
-        metrics = self._calculate_metrics(all_labels, all_preds)
+        metrics = self._calculate_metrics(all_labels, all_preds, original_labels)
         return metrics
 
-    def _calculate_metrics(self, y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
-        """计算评估指标"""
+    def _calculate_metrics(self, y_true_norm: np.ndarray, y_pred_norm: np.ndarray,
+                           y_true_original: np.ndarray) -> Dict[str, float]:
+        """
+        计算评估指标
+        y_true_norm: 归一化后的真实标签 (0-1)
+        y_pred_norm: 模型预测值 (0-1)
+        y_true_original: 原始标签 (-2到2)
+        """
         metrics = {}
 
         for i, dim in enumerate(Config.DIMENSIONS):
-            pearson, _ = pearsonr(y_true[:, i], y_pred[:, i])
+            # 使用归一化后的连续值计算相关系数
+            pearson, _ = pearsonr(y_true_norm[:, i], y_pred_norm[:, i])
             metrics[f'{dim}_pearsonr'] = float(pearson)
 
-            rmse = np.sqrt(mean_squared_error(y_true[:, i], y_pred[:, i]))
+            # 使用归一化后的连续值计算RMSE
+            rmse = np.sqrt(mean_squared_error(y_true_norm[:, i], y_pred_norm[:, i]))
             metrics[f'{dim}_rmse'] = float(rmse)
 
-            mae = mean_absolute_error(y_true[:, i], y_pred[:, i])
+            # 使用归一化后的连续值计算MAE
+            mae = mean_absolute_error(y_true_norm[:, i], y_pred_norm[:, i])
             metrics[f'{dim}_mae'] = float(mae)
 
+            # 使用离散化后的值计算准确率
+            accuracy = calculate_accuracy(y_true_original[:, i], y_pred_norm[:, i])
+            metrics[f'{dim}_accuracy'] = float(accuracy)
+
+        # 平均指标
         metrics['avg_pearsonr'] = float(np.mean([metrics[f'{dim}_pearsonr'] for dim in Config.DIMENSIONS]))
         metrics['avg_rmse'] = float(np.mean([metrics[f'{dim}_rmse'] for dim in Config.DIMENSIONS]))
         metrics['avg_mae'] = float(np.mean([metrics[f'{dim}_mae'] for dim in Config.DIMENSIONS]))
+        metrics['avg_accuracy'] = float(np.mean([metrics[f'{dim}_accuracy'] for dim in Config.DIMENSIONS]))
 
         return metrics
 
     def print_metrics(self, metrics: Dict[str, float], prefix: str = ""):
         """打印指标"""
         self.logger.info(f"\n{prefix}评估指标:")
-        self.logger.info("-" * 80)
+        self.logger.info("-" * 100)
+        self.logger.info(f"{'维度':<8} {'Pearsonr':>10} {'RMSE':>10} {'MAE':>10} {'Accuracy':>10}")
+        self.logger.info("-" * 100)
 
         for dim in Config.DIMENSIONS:
             pearson = metrics[f'{dim}_pearsonr']
             rmse = metrics[f'{dim}_rmse']
             mae = metrics[f'{dim}_mae']
-            self.logger.info(f"{dim:6s} - Pearsonr: {pearson:.3f}, RMSE: {rmse:.3f}, MAE: {mae:.3f}")
+            accuracy = metrics[f'{dim}_accuracy']
+            self.logger.info(
+                f"{dim:<8} {pearson:>10.3f} {rmse:>10.3f} {mae:>10.3f} {accuracy:>10.3f}"
+            )
 
-        self.logger.info("-" * 80)
+        self.logger.info("-" * 100)
         self.logger.info(
-            f"平均   - Pearsonr: {metrics['avg_pearsonr']:.3f}, "
-            f"RMSE: {metrics['avg_rmse']:.3f}, MAE: {metrics['avg_mae']:.3f}"
+            f"{'平均':<8} {metrics['avg_pearsonr']:>10.3f} "
+            f"{metrics['avg_rmse']:>10.3f} {metrics['avg_mae']:>10.3f} "
+            f"{metrics['avg_accuracy']:>10.3f}"
         )
+        self.logger.info("-" * 100)
 
         if metrics['avg_pearsonr'] >= Config.QUALIFIED_THRESHOLD:
             self.logger.info(f"✓ 模型合格 (Pearsonr ≥ {Config.QUALIFIED_THRESHOLD})")
         else:
             self.logger.warning(
-                f"⚠ 模型未达标 (Pearsonr: {metrics['avg_pearsonr']:.3f} < {Config.QUALIFIED_THRESHOLD})")
+                f"⚠ 模型未达标 (Pearsonr: {metrics['avg_pearsonr']:.3f} < {Config.QUALIFIED_THRESHOLD})"
+            )
 
     def plot_predictions(self, model: nn.Module, test_loader: DataLoader, save_dir: Path):
-        """绘制预测值-真实值散点图"""
+        """绘制预测值-真实值散点图（离散化后）"""
         self.logger.info("\n生成预测散点图...")
         save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -522,15 +613,20 @@ class BaselineTrainer:
         all_preds = np.vstack(all_preds)
         all_labels = np.vstack(all_labels)
 
+        # 离散化预测值
+        all_preds_discrete = discretize_predictions(all_preds)
+        all_labels_discrete = self.test_labels_original
+
         plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
         plt.rcParams['axes.unicode_minus'] = False
 
         for i, dim in enumerate(Config.DIMENSIONS):
             plt.figure(figsize=Config.FIGURE_SIZE, dpi=Config.FIGURE_DPI)
 
+            # 使用离散化后的值绘图
             plt.scatter(
-                all_labels[:, i],
-                all_preds[:, i],
+                all_labels_discrete[:, i],
+                all_preds_discrete[:, i],
                 alpha=Config.SCATTER_ALPHA,
                 s=Config.SCATTER_SIZE,
                 c='steelblue',
@@ -538,15 +634,20 @@ class BaselineTrainer:
                 linewidth=0.5
             )
 
-            min_val = min(all_labels[:, i].min(), all_preds[:, i].min())
-            max_val = max(all_labels[:, i].max(), all_preds[:, i].max())
-            plt.plot([min_val, max_val], [min_val, max_val], 'r--', lw=2, alpha=0.7)
+            # 绘制理想对角线
+            plt.plot([-2, 2], [-2, 2], 'r--', lw=2, alpha=0.7)
 
+            # 计算离散化后的准确率
+            accuracy = calculate_accuracy(all_labels_discrete[:, i], all_preds[:, i])
+
+            # 计算连续值的pearson相关系数
             pearson, _ = pearsonr(all_labels[:, i], all_preds[:, i])
 
             plt.xlabel('真实值', fontsize=12)
             plt.ylabel('预测值', fontsize=12)
-            plt.title(f'{dim} - Pearson r = {pearson:.3f}', fontsize=14)
+            plt.title(f'{dim} - Accuracy = {accuracy:.3f}, Pearson r = {pearson:.3f}', fontsize=14)
+            plt.xticks([-2, -1, 0, 1, 2])
+            plt.yticks([-2, -1, 0, 1, 2])
             plt.grid(True, alpha=0.3)
             plt.tight_layout()
 
@@ -592,7 +693,7 @@ class BaselineTrainer:
                 self.logger.info(f"{'=' * 80}")
 
                 train_metrics = self.train_epoch(model, train_loader, optimizer, scheduler, epoch)
-                val_metrics = self.evaluate(model, val_loader)
+                val_metrics = self.evaluate(model, val_loader, self.val_labels_original)
 
                 self.logger.info(f"\n[训练集]")
                 self.print_metrics(train_metrics, "")
@@ -605,7 +706,10 @@ class BaselineTrainer:
 
                 if is_best:
                     best_val_pearson = val_pearson
-                    self.logger.info(f"✓ 新的最佳模型 (Pearsonr: {val_pearson:.3f})")
+                    self.logger.info(
+                        f"✓ 新的最佳模型 (Pearsonr: {val_pearson:.3f}, "
+                        f"Accuracy: {val_metrics['avg_accuracy']:.3f})"
+                    )
 
                 # 保存检查点
                 self.save_checkpoint(model, optimizer, scheduler, epoch, val_metrics, is_best)
@@ -634,7 +738,7 @@ class BaselineTrainer:
                 self.logger.warning("⚠ 未找到最佳模型，使用当前模型")
                 best_model = model
 
-            test_metrics = self.evaluate(best_model, test_loader)
+            test_metrics = self.evaluate(best_model, test_loader, self.test_labels_original)
 
             self.print_metrics(test_metrics, "[测试集] ")
 

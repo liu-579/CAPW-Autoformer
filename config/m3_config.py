@@ -8,20 +8,20 @@
 # 输入文件配置
 # ========================================
 INPUT_FILES = {
-    'cleaned_comments': r'D:\learning\shiyan1\data\输出\m1_cleaned_comments.jsonl',  # 模块1的输出
-    'sentiment_scores': r'D:\learning\shiyan1\data\输出\m2_sentiment_scores.json',  # 模块2的输出
+    'cleaned_comments': r'data\输出\m1_cleaned_comments.jsonl',  # 模块1的输出
+    'sentiment_scores': r'data\输出\m2_sentiment_scores.json',  # 模块2的输出
 }
 
 # ========================================
 # 输出文件配置
 # ========================================
 OUTPUT_FILES = {
-    'merged_dataset': r'D:\learning\shiyan1\data\输出\dataset_v1/dataset_v1.jsonl',  # 合并后的完整数据集
-    'train_csv': r'D:\learning\shiyan1\data\输出\dataset_v1/train.csv',
-    'val_csv': r'D:\learning\shiyan1\data\输出\dataset_v1/val.csv',
-    'test_csv': r'D:\learning\shiyan1\data\输出\dataset_v1/test.csv',
-    'data_card': r'D:\learning\shiyan1\data\输出\data_card.md',
-    'archive': r'D:\learning\shiyan1\data\输出\dataset_v1.zip',  # 压缩包
+    'merged_dataset': r'data\输出\dataset_v1/dataset_v1.jsonl',  # 合并后的完整数据集
+    'train_csv': r'data\输出\dataset_v1/train.csv',
+    'val_csv': r'data\输出\dataset_v1/val.csv',
+    'test_csv': r'data\输出\dataset_v1/test.csv',
+    'data_card': r'data\输出\data_card.md',
+    'archive': r'data\输出\dataset_v1.zip',  # 压缩包
 }
 
 # ========================================

@@ -1,0 +1,67 @@
+{
+    "comment": "全程无购物纯游玩，黄导游也特别负责服务的很好，大巴单人单做特别舒服，中午特色餐特别好吃，也是我吃过最棒的旅游团餐，下次还选择他们",
+    "timestamp": "2025-11-28 18:09:41",
+    "model_info": {
+        "checkpoint_path": "E:\\2024liushaoxuan\\learn\\shiyan1\\data\\输出\\m4_baseline\\checkpoints\\best_model\\best_checkpoint.pt",
+        "epoch": 12,
+        "model_name": "hfl/chinese-macbert-base",
+        "num_labels": 5,
+        "metrics": {
+            "景色_pearsonr": 0.874977707862854,
+            "景色_rmse": 0.07231637744803054,
+            "景色_mae": 0.03209633007645607,
+            "景色_accuracy": 0.9242424242424242,
+            "交通_pearsonr": 0.2547655999660492,
+            "交通_rmse": 0.051228361402734165,
+            "交通_mae": 0.019765695556998253,
+            "交通_accuracy": 0.9734848484848485,
+            "美食_pearsonr": 0.6399812698364258,
+            "美食_rmse": 0.0674351026294074,
+            "美食_mae": 0.024129651486873627,
+            "美食_accuracy": 0.9621212121212122,
+            "门票_pearsonr": 0.40269431471824646,
+            "门票_rmse": 0.03855859464193812,
+            "门票_mae": 0.01786959543824196,
+            "门票_accuracy": 0.9772727272727273,
+            "服务_pearsonr": 0.8426851034164429,
+            "服务_rmse": 0.06486977663860558,
+            "服务_mae": 0.020293928682804108,
+            "服务_accuracy": 0.9734848484848485,
+            "avg_pearsonr": 0.6030207991600036,
+            "avg_rmse": 0.05888164255214316,
+            "avg_mae": 0.022831040248274804,
+            "avg_accuracy": 0.9621212121212122
+        }
+    },
+    "continuous_scores": {
+        "valence": 0.07868552207946777,
+        "arousal": 1.7070932388305664,
+        "dominance": 1.749006748199463,
+        "likeability": -0.09839606285095215,
+        "intensity": 1.8813517093658447
+    },
+    "normalized_scores": {
+        "valence": 0.5196713805198669,
+        "arousal": 0.9267733097076416,
+        "dominance": 0.9372516870498657,
+        "likeability": 0.47540098428726196,
+        "intensity": 0.9703379273414612
+    },
+    "discrete_scores": {
+        "valence": 0,
+        "arousal": 2,
+        "dominance": 2,
+        "likeability": 0,
+        "intensity": 2
+    },
+    "score_labels": {
+        "valence": "一般",
+        "arousal": "很好",
+        "dominance": "很好",
+        "likeability": "一般",
+        "intensity": "很好"
+    },
+    "average_normalized": 0.7658870816230774,
+    "average_continuous": 1.0635483264923096,
+    "average_discrete": 1.2
+}
