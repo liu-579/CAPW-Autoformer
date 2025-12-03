@@ -3,7 +3,7 @@
 """
 模块2：多维情感评分配置文件
 """
-
+from pathlib import Path
 # ========================================
 # OpenAI API 配置
 # ========================================
@@ -18,8 +18,10 @@ OPENAI_CONFIG = {
 # ========================================
 # 输入输出文件配置
 # ========================================
-INPUT_FILE = r'D:\learning\shiyan1\data\输出\m1_cleaned_comments.jsonl'
-OUTPUT_FILE = r'D:\learning\shiyan1\data\输出\m2_sentiment_scores.json'
+# 项目根目录
+PROJECT_ROOT = Path(__file__).parent.parent
+INPUT_FILE =PROJECT_ROOT/ r'data\输出\m1_cleaned_comments.jsonl'
+OUTPUT_FILE =PROJECT_ROOT/ r'data\输出\m2_sentiment_scores.json'
 
 # ========================================
 # 情感评分维度配置（核心配置，修改这里可以改变维度）

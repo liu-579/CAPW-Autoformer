@@ -29,6 +29,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import matplotlib
 
+import config.m4_config
+
 matplotlib.use('Agg')
 
 # 导入配置
@@ -590,8 +592,8 @@ class BaselineTrainer:
                 f"⚠ 模型未达标 (Pearsonr: {metrics['avg_pearsonr']:.3f} < {Config.QUALIFIED_THRESHOLD})"
             )
 
-    def plot_predictions(self, model: nn.Module, test_loader: DataLoader, save_dir: Path):
-        """绘制预测值-真实值散点图（离散化后）"""
+    def plot_predictions(self, model: nn.Module, test_loader: DataLoader, save_dir: Path,):
+        """绘制预测值-真实值散点图（使用连续值）"""
         self.logger.info("\n生成预测散点图...")
         save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -613,9 +615,9 @@ class BaselineTrainer:
         all_preds = np.vstack(all_preds)
         all_labels = np.vstack(all_labels)
 
-        # 离散化预测值
-        all_preds_discrete = discretize_predictions(all_preds)
-        all_labels_discrete = self.test_labels_original
+        # 将归一化的预测值映射回[-2,2]区间
+        all_preds_continuous = denormalize_predictions(all_preds)
+        all_labels_discrete = self.test_labels_original  # 原始标签本来就是离散的[-2,2]
 
         plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
         plt.rcParams['axes.unicode_minus'] = False
@@ -623,10 +625,10 @@ class BaselineTrainer:
         for i, dim in enumerate(Config.DIMENSIONS):
             plt.figure(figsize=Config.FIGURE_SIZE, dpi=Config.FIGURE_DPI)
 
-            # 使用离散化后的值绘图
+            # 使用连续预测值绘图
             plt.scatter(
                 all_labels_discrete[:, i],
-                all_preds_discrete[:, i],
+                all_preds_continuous[:, i],
                 alpha=Config.SCATTER_ALPHA,
                 s=Config.SCATTER_SIZE,
                 c='steelblue',
@@ -637,7 +639,7 @@ class BaselineTrainer:
             # 绘制理想对角线
             plt.plot([-2, 2], [-2, 2], 'r--', lw=2, alpha=0.7)
 
-            # 计算离散化后的准确率
+            # 计算离散化后的准确率(仍然保留这个指标)
             accuracy = calculate_accuracy(all_labels_discrete[:, i], all_preds[:, i])
 
             # 计算连续值的pearson相关系数
@@ -650,8 +652,10 @@ class BaselineTrainer:
             plt.yticks([-2, -1, 0, 1, 2])
             plt.grid(True, alpha=0.3)
             plt.tight_layout()
+            # 从MODEL_NAME中提取模型简称
+            model_short_name = Config.MODEL_NAME.split('/')[-1].replace('chinese-', '')  # 移除'chinese-'前缀
 
-            save_path = save_dir / f'{dim}_scatter.png'
+            save_path = save_dir / f'{model_short_name}_{dim}_scatter.png'
             plt.savefig(save_path, dpi=Config.FIGURE_DPI, bbox_inches='tight')
             plt.close()
 
@@ -767,7 +771,7 @@ def main():
     """主函数"""
     trainer = BaselineTrainer()
     trainer.train()
-
+    # print (config.m4_config.BaselineConfig.DATA_DIR)
 
 if __name__ == "__main__":
     main()

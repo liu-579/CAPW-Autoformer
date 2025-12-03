@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 # 数据目录
 DATA_DIR = PROJECT_ROOT / 'data'
 RAW_DATA_DIR = DATA_DIR / 'raw'
-OUTPUT_DIR = DATA_DIR / '输出'
+OUTPUT_DIR = DATA_DIR / 'output'
 
 # 确保目录存在
 RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -21,7 +21,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ==================== 文件路径配置 ====================
 # 输入文件路径（请修改为你的实际路径）
-INPUT_FILE = r"D:\learning\shiyan1\data\raw\乐山大佛、黄鹤楼评价数据.xlsx"
+INPUT_FILE = DATA_DIR = RAW_DATA_DIR/"乐山大佛、黄鹤楼评价数据.xlsx"
 
 # 输出文件路径
 OUTPUT_FILE = OUTPUT_DIR / "m1_cleaned_comments.jsonl"

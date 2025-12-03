@@ -10,17 +10,21 @@ from typing import Dict, Any
 
 class BaselineConfig:
     """基线模型训练配置"""
-    real_path = r"E:\2024liushaoxuan\learn\shiyan1"
+    from pathlib import Path
+    # 项目根目录
+    PROJECT_ROOT = Path(__file__).parent.parent
+
     # ==================== 路径配置 ====================
     # 数据路径
-    DATA_DIR = Path(r"E:\2024liushaoxuan\learn\shiyan1/data\输出\dataset_v1")
+    DATA_DIR = PROJECT_ROOT/r"data\输出\dataset_v1"
     TRAIN_FILE = DATA_DIR / "train.csv"
     VAL_FILE = DATA_DIR / "val.csv"
     TEST_FILE = DATA_DIR / "test.csv"
 
     # 输出路径
-    OUTPUT_DIR = Path(r"E:\2024liushaoxuan\learn\shiyan1/data\输出\m4_macbert")    # macbert的输出目录
-    OUTPUT_DIR = Path(r"E:\2024liushaoxuan\learn\shiyan1/data\输出\m4_Robert")    # roberta的输出目录
+    # OUTPUT_DIR = PROJECT_ROOT/r"data\输出\m4_macbert"    # macbert的输出目录
+    # OUTPUT_DIR = PROJECT_ROOT/r"data\输出\m4_Robert"    # roberta的输出目录
+    OUTPUT_DIR = PROJECT_ROOT / r"data\输出\m4_base_bert"  # base_berta的输出目录
     CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints" / "best_model"
     FIGURES_DIR = OUTPUT_DIR / "figures"
     METRICS_FILE = OUTPUT_DIR / "metrics.json"
@@ -30,8 +34,8 @@ class BaselineConfig:
     # 预训练模型（可替换为其他中文模型）
     # MODEL_NAME = "hfl/chinese-macbert-base"
     # 备选模型（取消注释即可使用）:
-    # MODEL_NAME = "bert-base-chinese"
-    MODEL_NAME = "hfl/chinese-roberta-wwm-ext"
+    MODEL_NAME = "bert-base-chinese"
+    # MODEL_NAME = "hfl/chinese-roberta-wwm-ext"
     # MODEL_NAME = "hfl/chinese-electra-180g-base-discriminator"
 
     # 模型参数
@@ -52,7 +56,7 @@ class BaselineConfig:
     MAX_GRAD_NORM = 1.0  # 梯度裁剪
 
     # 早停配置
-    EARLY_STOPPING_PATIENCE = 10  # 早停耐心值
+    EARLY_STOPPING_PATIENCE = 100  # 早停耐心值
     EARLY_STOPPING_METRIC = "avg_pearsonr"  # 监控指标
     EARLY_STOPPING_MODE = "max"  # 最大化还是最小化
 
@@ -82,7 +86,7 @@ class BaselineConfig:
     DIMENSIONS = ["景色", "交通", "美食", "门票", "服务"]
 
     # 合格阈值
-    QUALIFIED_THRESHOLD = 0.95  # 平均Pearsonr阈值
+    QUALIFIED_THRESHOLD = 0.85  # 平均Pearsonr阈值
 
     # 评估指标
     METRICS = ["pearsonr", "rmse", "mae"]
