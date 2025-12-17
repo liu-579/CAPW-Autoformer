@@ -1,0 +1,302 @@
+2025-12-15 20:53:59,765 - INFO - 初始化推理引擎，使用设备: cuda
+2025-12-15 20:53:59,765 - INFO - 正在加载模型和分词器...
+2025-12-15 20:54:13,481 - ERROR - 模型加载失败: 'model_state_dict'
+2025-12-15 20:54:13,481 - ERROR - 程序执行出错: 'model_state_dict'
+Traceback (most recent call last):
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 429, in run
+    self.load_model()
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 160, in load_model
+    self.model.load_state_dict(checkpoint['model_state_dict'])
+                               ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+KeyError: 'model_state_dict'
+2025-12-15 20:54:13,484 - INFO - 程序结束，总耗时: 13.72 秒
+2025-12-15 20:56:18,246 - INFO - 初始化推理引擎，使用设备: cuda
+2025-12-15 20:56:18,246 - INFO - 正在加载模型和分词器...
+2025-12-15 20:56:29,033 - ERROR - 模型加载失败: 'model_state_dict'
+2025-12-15 20:56:29,034 - ERROR - 程序执行出错: 'model_state_dict'
+Traceback (most recent call last):
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 429, in run
+    self.load_model()
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 160, in load_model
+    self.model.load_state_dict(checkpoint['model_state_dict'])
+                               ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+KeyError: 'model_state_dict'
+2025-12-15 20:56:29,036 - INFO - 程序结束，总耗时: 10.79 秒
+2025-12-15 21:02:38,112 - INFO - 初始化推理引擎，使用设备: cuda
+2025-12-15 21:02:38,113 - INFO - 正在加载模型和分词器...
+2025-12-15 21:02:48,927 - ERROR - 模型加载失败: 'model_state_dict'
+2025-12-15 21:02:48,928 - ERROR - 程序执行出错: 'model_state_dict'
+Traceback (most recent call last):
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 429, in run
+    self.load_model()
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 160, in load_model
+    self.model.load_state_dict(checkpoint['model_state_dict'])
+                               ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+KeyError: 'model_state_dict'
+2025-12-15 21:02:48,930 - INFO - 程序结束，总耗时: 10.82 秒
+2025-12-15 21:10:02,966 - INFO - 初始化推理引擎，使用设备: cuda
+2025-12-15 21:10:02,967 - INFO - 正在加载模型和分词器...
+2025-12-15 21:10:16,594 - INFO - Checkpoint keys: ['epoch', 'encoder_state_dict', 'regressor_state_dict', 'optimizer_state_dict', 'scheduler_state_dict', 'metrics', 'model_name', 'num_labels', 'dropout', 'best_pearsonr', 'best_accuracy']
+2025-12-15 21:10:16,594 - INFO - 检测到分体式权重 (encoder/regressor)，正在分别加载...
+2025-12-15 21:10:16,955 - INFO - ✓ 模型权重加载成功
+2025-12-15 21:10:16,956 - INFO - 正在连接数据库: localhost
+2025-12-15 21:10:16,985 - INFO - 执行SQL: SELECT `id`, `original_id`, `scenic_name`, `source_type`, `author`, `title`, `release_date`, `isvali...
+2025-12-15 21:11:05,548 - INFO - 开始推理 1228042 条数据...
+2025-12-15 21:11:05,820 - ERROR - 主流程异常: default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found <class 'datetime.datetime'>
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 240, in collate
+    raise TypeError(default_collate_err_msg_format.format(elem_type))
+TypeError: default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found <class 'datetime.datetime'>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 240, in collate
+    raise TypeError(default_collate_err_msg_format.format(elem_type))
+TypeError: default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found <class 'datetime.datetime'>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 240, in collate
+    raise TypeError(default_collate_err_msg_format.format(elem_type))
+TypeError: default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found <class 'datetime.datetime'>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 368, in run
+    results = self.batch_inference(raw_data)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 227, in batch_inference
+    for batch in tqdm(dataloader, desc="推理中"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\tqdm\std.py", line 1181, in __iter__
+    for obj in iterable:
+               ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\dataloader.py", line 708, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\dataloader.py", line 764, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\fetch.py", line 55, in fetch
+    return self.collate_fn(data)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 398, in default_collate
+    return collate(batch, collate_fn_map=default_collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 240, in collate
+    raise TypeError(default_collate_err_msg_format.format(elem_type))
+TypeError: default_collate: batch must contain tensors, numpy arrays, numbers, dicts or lists; found <class 'datetime.datetime'>
+2025-12-15 21:11:05,904 - INFO - 耗时: 62.94s
+2025-12-15 21:14:28,084 - INFO - 初始化推理引擎，使用设备: cuda
+2025-12-15 21:14:28,084 - INFO - 正在加载模型和分词器...
+2025-12-15 21:14:42,388 - INFO - 检测到分体式权重 (encoder/regressor)，正在分别加载...
+2025-12-15 21:14:42,690 - INFO - ✓ 模型权重加载成功
+2025-12-15 21:14:42,692 - INFO - 正在连接数据库: localhost
+2025-12-15 21:14:42,721 - INFO - 执行SQL: SELECT `id`, `original_id`, `scenic_name`, `source_type`, `author`, `title`, `release_date`, `isvali...
+2025-12-15 21:15:31,493 - INFO - 开始推理 1228042 条数据...
+2025-12-15 21:18:58,871 - ERROR - 主流程异常: must be real number, not NoneType
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 301, in collate_float_fn
+    return torch.tensor(batch, dtype=torch.float64)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: must be real number, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 301, in collate_float_fn
+    return torch.tensor(batch, dtype=torch.float64)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: must be real number, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 301, in collate_float_fn
+    return torch.tensor(batch, dtype=torch.float64)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: must be real number, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 363, in run
+    results = self.batch_inference(raw_data)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 231, in batch_inference
+    for batch in tqdm(dataloader, desc="推理中"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\tqdm\std.py", line 1181, in __iter__
+    for obj in iterable:
+               ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\dataloader.py", line 708, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\dataloader.py", line 764, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\fetch.py", line 55, in fetch
+    return self.collate_fn(data)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 398, in default_collate
+    return collate(batch, collate_fn_map=default_collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 301, in collate_float_fn
+    return torch.tensor(batch, dtype=torch.float64)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: must be real number, not NoneType
+2025-12-15 21:18:59,276 - INFO - 耗时: 271.19s
+2025-12-15 21:24:41,362 - INFO - 初始化推理引擎，使用设备: cuda
+2025-12-15 21:24:41,363 - INFO - 正在加载模型和分词器...
+2025-12-15 21:24:52,158 - INFO - 检测到分体式权重，正在加载...
+2025-12-15 21:24:52,458 - INFO - ✓ 模型权重加载成功
+2025-12-15 21:24:52,461 - INFO - 正在连接数据库: localhost
+2025-12-15 21:24:52,496 - INFO - 执行SQL: SELECT `id`, `original_id`, `scenic_name`, `source_type`, `author`, `title`, `release_date`, `isvali...
+2025-12-15 21:25:41,816 - INFO - 开始推理 1228042 条数据...
+2025-12-15 22:12:49,469 - ERROR - 主流程异常: new(): invalid data type 'str'
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 309, in collate_int_fn
+    return torch.tensor(batch)
+           ^^^^^^^^^^^^^^^^^^^
+TypeError: new(): invalid data type 'str'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 309, in collate_int_fn
+    return torch.tensor(batch)
+           ^^^^^^^^^^^^^^^^^^^
+TypeError: new(): invalid data type 'str'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 172, in collate
+    key: collate(
+         ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 309, in collate_int_fn
+    return torch.tensor(batch)
+           ^^^^^^^^^^^^^^^^^^^
+TypeError: new(): invalid data type 'str'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 355, in run
+    results = self.batch_inference(raw_data)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\2024liushaoxuan\learn\shiyan1\scripts\m4_sql_b_inference.py", line 230, in batch_inference
+    for batch in tqdm(dataloader, desc="推理中"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\tqdm\std.py", line 1181, in __iter__
+    for obj in iterable:
+               ^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\dataloader.py", line 708, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\dataloader.py", line 764, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\fetch.py", line 55, in fetch
+    return self.collate_fn(data)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 398, in default_collate
+    return collate(batch, collate_fn_map=default_collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 192, in collate
+    key: collate([d[key] for d in batch], collate_fn_map=collate_fn_map)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 155, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\anaconda3\envs\lsx\lsx\Lib\site-packages\torch\utils\data\_utils\collate.py", line 309, in collate_int_fn
+    return torch.tensor(batch)
+           ^^^^^^^^^^^^^^^^^^^
+TypeError: new(): invalid data type 'str'
+2025-12-15 22:12:54,743 - INFO - 耗时: 2893.38s
+2025-12-15 22:38:22,193 - INFO - 初始化推理引擎，使用设备: cuda
+2025-12-15 22:38:22,194 - INFO - 正在加载模型和分词器...
+2025-12-15 22:38:33,479 - INFO - 检测到分体式权重，正在加载...
+2025-12-15 22:38:33,781 - INFO - ✓ 模型权重加载成功
+2025-12-15 22:38:33,783 - INFO - 正在连接数据库: localhost
+2025-12-15 22:38:33,817 - INFO - 执行SQL查询...
+2025-12-15 22:39:22,163 - INFO - 成功读取 1228042 条数据
+2025-12-15 22:39:22,363 - INFO - 开始推理 1228042 条数据...
+2025-12-15 23:47:20,837 - INFO - 推理完成，共处理 1228042 条数据
+2025-12-15 23:47:20,837 - INFO - 正在保存 1228042 条结果到数据库...
+2025-12-15 23:47:20,921 - INFO - 表 `yq_inference_all` 已准备就绪
+2025-12-15 23:51:21,239 - INFO - ✓ 数据保存完成
+2025-12-15 23:51:21,240 - INFO - ✓ 任务完成！共处理 1228042 条，成功 1228042 条
+2025-12-15 23:51:21,240 - INFO - 总耗时: 4379.05s (72.98分钟)

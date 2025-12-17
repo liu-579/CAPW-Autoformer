@@ -16,15 +16,15 @@ class BaselineConfig:
 
     # ==================== 路径配置 ====================
     # 数据路径
-    DATA_DIR = PROJECT_ROOT/r"data\输出\dataset_v1"
+    DATA_DIR = PROJECT_ROOT/r"data\output\dataset_v1"
     TRAIN_FILE = DATA_DIR / "train.csv"
     VAL_FILE = DATA_DIR / "val.csv"
     TEST_FILE = DATA_DIR / "test.csv"
 
     # 输出路径
     # OUTPUT_DIR = PROJECT_ROOT/r"data\输出\m4_macbert"    # macbert的输出目录
-    # OUTPUT_DIR = PROJECT_ROOT/r"data\输出\m4_Robert"    # roberta的输出目录
-    OUTPUT_DIR = PROJECT_ROOT / r"data\输出\m4_base_bert"  # base_berta的输出目录
+    OUTPUT_DIR = PROJECT_ROOT/r"data\输出\m4_Robert_new_1.0"    # roberta的输出目录
+    # OUTPUT_DIR = PROJECT_ROOT / r"data\输出\m4_base_bert"  # base_berta的输出目录
     CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints" / "best_model"
     FIGURES_DIR = OUTPUT_DIR / "figures"
     METRICS_FILE = OUTPUT_DIR / "metrics.json"
@@ -34,8 +34,8 @@ class BaselineConfig:
     # 预训练模型（可替换为其他中文模型）
     # MODEL_NAME = "hfl/chinese-macbert-base"
     # 备选模型（取消注释即可使用）:
-    MODEL_NAME = "bert-base-chinese"
-    # MODEL_NAME = "hfl/chinese-roberta-wwm-ext"
+    # MODEL_NAME = "bert-base-chinese"
+    MODEL_NAME = "hfl/chinese-roberta-wwm-ext"
     # MODEL_NAME = "hfl/chinese-electra-180g-base-discriminator"
 
     # 模型参数
@@ -46,7 +46,7 @@ class BaselineConfig:
     # ==================== 训练配置 ====================
     # 基础参数
     BATCH_SIZE = 16  # 批次大小
-    NUM_EPOCHS = 100  # 最大训练轮数
+    NUM_EPOCHS = 150  # 最大训练轮数
     LEARNING_RATE = 2e-5  # 学习率
     WEIGHT_DECAY = 0.01  # 权重衰减
     WARMUP_RATIO = 0.1  # 预热比例
@@ -55,8 +55,11 @@ class BaselineConfig:
     ADAM_EPSILON = 1e-8
     MAX_GRAD_NORM = 1.0  # 梯度裁剪
 
+    # 损失函数配置
+    MSE_WEIGHT = 1.0  # MSE损失权重
+    PEARSON_WEIGHT = 1.0  # Pearson损失权重（1 - r）
     # 早停配置
-    EARLY_STOPPING_PATIENCE = 100  # 早停耐心值
+    EARLY_STOPPING_PATIENCE = 30  # 早停耐心值
     EARLY_STOPPING_METRIC = "avg_pearsonr"  # 监控指标
     EARLY_STOPPING_MODE = "max"  # 最大化还是最小化
 
@@ -83,7 +86,7 @@ class BaselineConfig:
 
     # ==================== 评估配置 ====================
     # 情感维度
-    DIMENSIONS = ["景色", "交通", "美食", "门票", "服务"]
+    DIMENSIONS = ["景色", "交通", "美食", "消费", "服务"]
 
     # 合格阈值
     QUALIFIED_THRESHOLD = 0.85  # 平均Pearsonr阈值

@@ -1,7 +1,7 @@
 # scripts/m4_train_baseline.py
 """
-模块 4：基线模型微调脚本
-使用HuggingFace Transformers训练多维情感回归模型（离散等级输出）
+模块 4：基线模型微调脚本（修复版）
+修复了断点重续时历史最优指标丢失的问题
 """
 
 import sys
@@ -29,8 +29,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import matplotlib
 
-import config.m4_config
-
 matplotlib.use('Agg')
 
 # 导入配置
@@ -40,7 +38,7 @@ from config.m4_config import BaselineConfig as Config
 warnings.filterwarnings('ignore')
 
 
-# ==================== 新增：离散化工具函数 ====================
+# ==================== 离散化工具函数 ====================
 def normalize_labels(labels: np.ndarray) -> np.ndarray:
     """
     将离散标签归一化到[0,1]区间
@@ -348,9 +346,14 @@ class BaselineTrainer:
 
         return optimizer, scheduler
 
+    # [修改点 1] save_checkpoint 增加 global_best_pearson 参数
     def save_checkpoint(self, model: nn.Module, optimizer: AdamW, scheduler: any,
-                        epoch: int, metrics: Dict[str, float], is_best: bool = False):
-        """保存训练检查点"""
+                        epoch: int, metrics: Dict[str, float], global_best_pearson: float,
+                        is_best: bool = False):
+        """
+        保存训练检查点
+        :param global_best_pearson: 历史全局最佳 Pearsonr (确保断点重续时知道真正的最佳是多少)
+        """
         if not Config.SAVE_CHECKPOINT_EVERY_EPOCH and not is_best:
             return
 
@@ -364,7 +367,9 @@ class BaselineTrainer:
             'model_name': Config.MODEL_NAME,
             'num_labels': Config.NUM_LABELS,
             'dropout': Config.HIDDEN_DROPOUT,
-            'best_pearsonr': metrics.get('avg_pearsonr', -1),
+
+            # [修改点 2] 这里保存传入的全局最佳，而不是当前 metrics 中的值
+            'best_pearsonr': global_best_pearson,
             'best_accuracy': metrics.get('avg_accuracy', 0)
         }
 
@@ -385,7 +390,7 @@ class BaselineTrainer:
             best_path = Config.CHECKPOINT_DIR / 'best_checkpoint.pt'
             torch.save(checkpoint, best_path)
             self.logger.info(
-                f"✓ 最佳检查点已保存 (Pearsonr: {metrics.get('avg_pearsonr', -1):.3f}, "
+                f"✓ 最佳检查点已保存 (Pearsonr: {global_best_pearson:.3f}, "
                 f"Accuracy: {metrics.get('avg_accuracy', 0):.3f})"
             )
 
@@ -448,22 +453,24 @@ class BaselineTrainer:
         epoch = checkpoint['epoch']
         metrics = checkpoint['metrics']
 
+        # 获取保存的历史最佳分数
+        best_pearsonr = checkpoint.get('best_pearsonr', -1)
+
         self.logger.info(f"✓ 从 Epoch {epoch} 恢复训练")
+        self.logger.info(f"✓ 历史最佳 Pearsonr: {best_pearsonr:.3f}")
+
         if metrics:
-            self.logger.info(f"  - 验证集 Pearsonr: {metrics.get('avg_pearsonr', 'N/A'):.3f}")
-            self.logger.info(f"  - 验证集 Accuracy: {metrics.get('avg_accuracy', 'N/A'):.3f}")
-            self.logger.info(f"  - 验证集 RMSE: {metrics.get('avg_rmse', 'N/A'):.3f}")
-            self.logger.info(f"  - 验证集 MAE: {metrics.get('avg_mae', 'N/A'):.3f}")
+            self.logger.info(f"  - 上次保存时 Pearsonr: {metrics.get('avg_pearsonr', 'N/A'):.3f}")
 
         return {
             'epoch': epoch,
             'metrics': metrics,
-            'best_pearsonr': checkpoint.get('best_pearsonr', -1),
+            'best_pearsonr': best_pearsonr,
             'best_accuracy': checkpoint.get('best_accuracy', 0)
         }
 
     def train_epoch(self, model: nn.Module, train_loader: DataLoader, optimizer: AdamW, scheduler: any, epoch: int) -> \
-    Dict[str, float]:
+            Dict[str, float]:
         """训练一个epoch"""
         model.train()
         total_loss = 0
@@ -592,7 +599,7 @@ class BaselineTrainer:
                 f"⚠ 模型未达标 (Pearsonr: {metrics['avg_pearsonr']:.3f} < {Config.QUALIFIED_THRESHOLD})"
             )
 
-    def plot_predictions(self, model: nn.Module, test_loader: DataLoader, save_dir: Path,):
+    def plot_predictions(self, model: nn.Module, test_loader: DataLoader, save_dir: Path):
         """绘制预测值-真实值散点图（使用连续值）"""
         self.logger.info("\n生成预测散点图...")
         save_dir.mkdir(parents=True, exist_ok=True)
@@ -652,10 +659,8 @@ class BaselineTrainer:
             plt.yticks([-2, -1, 0, 1, 2])
             plt.grid(True, alpha=0.3)
             plt.tight_layout()
-            # 从MODEL_NAME中提取模型简称
-            model_short_name = Config.MODEL_NAME.split('/')[-1].replace('chinese-', '')  # 移除'chinese-'前缀
 
-            save_path = save_dir / f'{model_short_name}_{dim}_scatter.png'
+            save_path = save_dir / f'{dim}_scatter.png'
             plt.savefig(save_path, dpi=Config.FIGURE_DPI, bbox_inches='tight')
             plt.close()
 
@@ -682,10 +687,14 @@ class BaselineTrainer:
                 mode=Config.EARLY_STOPPING_MODE
             )
 
-            # 如果从检查点恢复，更新早停状态
-            if checkpoint_info['epoch'] > 0 and checkpoint_info['metrics']:
-                early_stopping.best_score = checkpoint_info['metrics'].get('avg_pearsonr', None)
+            # [修改点 3] 恢复早停状态：使用加载的 best_pearsonr (即历史全局最佳)，而不是 metrics
+            if checkpoint_info['epoch'] > 0:
+                early_stopping.best_score = best_val_pearson
+                # 注意：best_epoch 这里我们只能模糊处理，或者需要额外保存 best_epoch 到检查点中
+                # 暂时设为当前 epoch，或者忽略，只要 best_score 主要是为了比较
                 early_stopping.best_epoch = checkpoint_info['epoch']
+
+                self.logger.info(f"✓ 早停机制已恢复 (基准分: {early_stopping.best_score:.3f})")
 
             self.logger.info("\n" + "=" * 80)
             self.logger.info("开始训练")
@@ -715,8 +724,13 @@ class BaselineTrainer:
                         f"Accuracy: {val_metrics['avg_accuracy']:.3f})"
                     )
 
-                # 保存检查点
-                self.save_checkpoint(model, optimizer, scheduler, epoch, val_metrics, is_best)
+                # [修改点 4] 保存检查点时，传入维护好的全局最佳 best_val_pearson
+                self.save_checkpoint(
+                    model, optimizer, scheduler, epoch,
+                    val_metrics,
+                    global_best_pearson=best_val_pearson,  # 传入全局最佳
+                    is_best=is_best
+                )
 
                 improved = early_stopping(val_pearson, epoch)
                 if early_stopping.early_stop:
@@ -771,7 +785,7 @@ def main():
     """主函数"""
     trainer = BaselineTrainer()
     trainer.train()
-    # print (config.m4_config.BaselineConfig.DATA_DIR)
+
 
 if __name__ == "__main__":
     main()
