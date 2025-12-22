@@ -1,0 +1,89 @@
+# -*- coding: utf-8 -*-
+"""
+张量构建配置文件
+Data Pipeline Engineer: Tensor Builder Configuration
+用途: 定义数据集划分、窗口参数、归一化配置等
+"""
+
+# ==================== 数据库连接配置 ====================
+DB_CONFIG = {
+    'host': 'localhost',
+    'port': 3306,
+    'user': 'root',
+    'password': 'password',  # 请修改为实际密码
+    'database': 'yq_data',  # 请修改为实际数据库名
+    'charset': 'utf8mb4'
+}
+
+# ==================== 输入表配置 ====================
+INPUT_TABLE = "cleaned_feature_store_鄂尔多斯草原"
+TARGET_COLUMN = "passenger_count"
+
+# ==================== 排除列配置 ====================
+# 这些列不参与特征工程（元数据列）
+EXCLUDE_COLS = [
+    'id',
+    'scenic_name',
+    'date',
+    'created_at',
+    'date_str',
+    'source_table'
+]
+
+# ==================== 时间序列窗口配置 ====================
+SEQ_LEN = 30      # 输入序列长度（使用过去30天的数据）
+PRED_LEN = 7      # 预测长度（预测未来7天）
+
+# ==================== 数据集划分配置 ====================
+TRAIN_RATIO = 0.7    # 训练集比例
+VAL_RATIO = 0.15     # 验证集比例
+TEST_RATIO = 0.15    # 测试集比例（自动计算: 1 - TRAIN - VAL）
+
+# 验证比例总和
+assert abs(TRAIN_RATIO + VAL_RATIO + TEST_RATIO - 1.0) < 1e-6, \
+    "数据集划分比例总和必须为1.0"
+
+# ==================== 归一化配置 ====================
+NORMALIZATION_METHOD = 'minmax'  # 归一化方法: 'minmax' 或 'standard'
+NORM_RANGE = (0, 1)              # MinMaxScaler 的范围
+
+# ==================== 特征分类关键词 ====================
+# [关键修改] 情感维度分组关键词
+# 注意：列表顺序至关重要，必须与 M9 模型中 Grouped Broadcasting 的权重顺序一致
+SENTIMENT_KEYWORDS = [
+    'scenery',        # 景色 (Group 0)
+    'transportation', # 交通 (Group 1)
+    'food',           # 美食 (Group 2)
+    'consumption',    # 消费 (Group 3)
+    'service'         # 服务 (Group 4)
+]
+
+# 上下文特征 (Context Features) 将自动定义为：
+# 不包含上述任何关键词的特征，且不是目标列
+
+# ==================== 输出文件配置 ====================
+from pathlib import Path
+# 项目根目录
+BASE_DIR = Path(__file__).parent.parent
+
+OUTPUT_DIR =BASE_DIR/ "data/output/m8b_eedscy"   # 输出目录
+SCALER_FILENAME = "scaler.pkl"   # Scaler对象保存文件名
+FEATURE_MAP_FILENAME = "feature_map.json"  # 特征映射保存文件名
+
+# 张量文件命名
+TENSOR_FILES = {
+    'train_x': 'train_x.npy',
+    'train_y': 'train_y.npy',
+    'val_x': 'val_x.npy',
+    'val_y': 'val_y.npy',
+    'test_x': 'test_x.npy',
+    'test_y': 'test_y.npy'
+}
+
+# ==================== 数据类型配置 ====================
+DTYPE = 'float32'  # 张量数据类型
+
+# ==================== 日志配置 ====================
+LOG_LEVEL = 'INFO'
+SHOW_SHAPE_INFO = True      # 是否显示形状信息
+SHOW_SAMPLE_DATA = True     # 是否显示样本数据

@@ -1,0 +1,11 @@
+{
+  "seq_len": 30,
+  "pred_len": 7,
+  "train_samples": 458,
+  "val_samples": 98,
+  "test_samples": 99,
+  "num_features": 40,
+  "target_column": "passenger_count",
+  "normalization": "minmax",
+  "dtype": "float32"
+}
