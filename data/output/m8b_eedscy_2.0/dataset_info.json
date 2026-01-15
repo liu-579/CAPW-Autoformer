@@ -1,0 +1,12 @@
+{
+  "seq_len": 30,
+  "pred_len": 7,
+  "feature_dim": 43,
+  "samples": {
+    "train": 486,
+    "val": 104,
+    "test": 105
+  },
+  "normalization_strategy": "Hybrid (Log-Target, Z-Sentiment, Raw-Time)",
+  "scaler_file": "scalers.pkl"
+}

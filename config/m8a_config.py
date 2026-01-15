@@ -20,48 +20,35 @@ TARGET_SCENIC_NAME = "响沙湾"
 
 # ==================== 表名配置 ====================
 SOURCE_TABLE = "fused_training_data"
-OUTPUT_TABLE_PREFIX = "cleaned_feature_store"  # 实际表名会加上景区名后缀
+OUTPUT_TABLE_PREFIX = "cleaned_feature_store"
 
 # ==================== 中文文本列定义 ====================
-# 需要进行编码处理的中文列
+# 这些列是原始中文文本，我们会利用它们（或日期）生成新特征
+# 之后这些原始列会在 strong_cleaning 阶段被 drop 掉
 TEXT_COLS = {
-    'day_of_week': 'str',      # 星期 (使用固定字典映射)
-    'holiday': 'str',          # 节假日 (二值化处理)
-    'weather_cond': 'str',     # 天气状况 (LabelEncoder)
-    'wind_dir': 'str'          # 风向 (LabelEncoder)
+    'day_of_week': 'str',      # 原始星期文本 (将被周期性特征替代)
+    'holiday': 'str',          # 原始节假日文本 (将被 chinese_calendar 逻辑替代)
+    'weather_cond': 'str',     # 天气状况 (保持 LabelEncoder)
+    'wind_dir': 'str'          # 风向 (保持 LabelEncoder)
 }
 
 # 需要转换为数值的列
 NUMERIC_CONVERSION_COLS = ['passenger_count']
 
-# ==================== 星期映射字典 (固定映射,防止排序混乱) ====================
-DAY_OF_WEEK_MAPPING = {
-    '周一': 1,
-    '周二': 2,
-    '周三': 3,
-    '周四': 4,
-    '周五': 5,
-    '周六': 6,
-    '周日': 7
-}
-
-# ==================== 节假日二值化规则 ====================
-HOLIDAY_NORMAL_VALUE = "非节假日"  # 正常值映射为 0
-# 其他所有值(春节/国庆等)映射为 1
-
 # ==================== 输出文件配置 ====================
-CSV_ENCODING = 'utf-8-sig'  # 带BOM头,防止Excel中文乱码
+CSV_ENCODING = 'utf-8-sig'
 CSV_OUTPUT_PREFIX = "debug_cleaned"
 
 # ==================== 数据清洗参数 ====================
-DROP_EMPTY_ROWS = True          # 是否删除空行
-DROP_EMPTY_COLS = True          # 是否删除全空列
-DROP_CONSTANT_COLS = True       # 是否删除常数列
-VARIANCE_THRESHOLD = 0.0        # 方差阈值,0表示完全常数
+DROP_EMPTY_ROWS = True
+DROP_EMPTY_COLS = True
+DROP_CONSTANT_COLS = True
+VARIANCE_THRESHOLD = 0.0
 
 # ==================== 保留列配置 ====================
-PRESERVE_COLS = ['date', 'scenic_name']  # 无论如何都保留的列
+# 无论如何都保留的列，建议保留 date 方便后续验证
+PRESERVE_COLS = ['date', 'scenic_name', 'is_day_off']
 
 # ==================== 日志配置 ====================
 LOG_LEVEL = 'INFO'
-SHOW_ENCODING_MAPPING = True    # 是否打印编码映射关系
+SHOW_ENCODING_MAPPING = True

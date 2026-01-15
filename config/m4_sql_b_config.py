@@ -15,7 +15,7 @@ class M4bConfig:
     PROJECT_ROOT = Path(__file__).parent.parent
 
     # 输出目录 (仅用于日志和临时文件)
-    OUTPUT_DIR = PROJECT_ROOT / "data/output" / "m4_sql_b_inference"
+    OUTPUT_DIR = PROJECT_ROOT / "data/output" / "m4_sql_b_inference_2"
     LOG_FILE = OUTPUT_DIR / "inference_log.txt"
 
     # M4训练好的模型路径
@@ -35,7 +35,7 @@ class M4bConfig:
 
     # ==================== 数据源配置 (MySQL 输入) ====================
     DATA_SOURCE_CONFIG = {
-        'input_table': 'yq_clean_all',  # 原评论数据表
+        'input_table': 'yq_clean_all_2',  # 原评论数据表
         'content_field': 'format_content',  # 评论正文的字段名，用于模型推理
 
         # 需要读取的原始字段列表
@@ -53,7 +53,7 @@ class M4bConfig:
 
     # ==================== 结果输出配置 (MySQL 输出) ====================
     DATA_OUTPUT_CONFIG = {
-        'output_table': 'yq_inference_all',  # 推理结果存放的新表名
+        'output_table': 'yq_inference_all_2',  # 推理结果存放的新表名
         'create_table_if_not_exists': True,  # 如果表不存在则创建
         'batch_size': 5000,  # 数据库批量插入大小
     }

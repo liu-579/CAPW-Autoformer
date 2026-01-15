@@ -16,7 +16,7 @@ DB_CONFIG = {
 }
 
 # ==================== 输入表配置 ====================
-INPUT_TABLE = "cleaned_feature_store_鄂尔多斯草原"
+INPUT_TABLE = "cleaned_feature_store_2_响沙湾"
 TARGET_COLUMN = "passenger_count"
 
 # ==================== 排除列配置 ====================
@@ -43,8 +43,9 @@ TEST_RATIO = 0.15    # 测试集比例（自动计算: 1 - TRAIN - VAL）
 assert abs(TRAIN_RATIO + VAL_RATIO + TEST_RATIO - 1.0) < 1e-6, \
     "数据集划分比例总和必须为1.0"
 
-# ==================== 归一化配置 ====================
-NORMALIZATION_METHOD = 'minmax'  # 归一化方法: 'minmax' 或 'standard'
+# ==================== 归一化配置 (混合策略) ====================
+# 注意：代码已升级为 Hybrid Strategy，以下参数仅对"其他连续数值列"生效
+NORMALIZATION_METHOD = 'minmax'  # 默认归一化方法
 NORM_RANGE = (0, 1)              # MinMaxScaler 的范围
 
 # ==================== 特征分类关键词 ====================
@@ -58,16 +59,13 @@ SENTIMENT_KEYWORDS = [
     'service'         # 服务 (Group 4)
 ]
 
-# 上下文特征 (Context Features) 将自动定义为：
-# 不包含上述任何关键词的特征，且不是目标列
-
 # ==================== 输出文件配置 ====================
 from pathlib import Path
 # 项目根目录
 BASE_DIR = Path(__file__).parent.parent
 
-OUTPUT_DIR =BASE_DIR/ "data/output/m8b_eedscy"   # 输出目录
-SCALER_FILENAME = "scaler.pkl"   # Scaler对象保存文件名
+OUTPUT_DIR = BASE_DIR / "data/output/m8b_xsw_2.0"   # 输出目录
+SCALERS_FILENAME = "scalers.pkl"   # [修改] 保存所有 Scaler 的字典
 FEATURE_MAP_FILENAME = "feature_map.json"  # 特征映射保存文件名
 
 # 张量文件命名

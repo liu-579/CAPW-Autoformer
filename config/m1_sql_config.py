@@ -15,13 +15,13 @@ DB_CONFIG = {
 # ==================== 2. 表结构配置 ====================
 # 需要读取的源表列表 (请确保这三张表结构一致)
 SOURCE_TABLES = [
-    'yq_24',
-    'yq_23_xsw',
-    'yq_23_eedscy'
+    'yq_24_2',
+    'yq_23_xsw_2',
+    'yq_23_eedscy_2'
 ]
 
 # 最终输出的新表名称
-TARGET_TABLE = 'yq_clean_all'
+TARGET_TABLE = 'yq_clean_all_3'
 
 # 需要进行清洗的特定字段名
 CLEAN_TARGET_COLUMN = 'format_content'

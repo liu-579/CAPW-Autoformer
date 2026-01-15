@@ -14,7 +14,8 @@ class M5Config:
     BASE_DIR = Path(__file__).parent.parent
     DATA_DIR = BASE_DIR / "data"
     OUTPUT_DIR = DATA_DIR / "output" / "m5"
-
+    # K值记录文件 (新增)
+    K_VALUES_FILE = OUTPUT_DIR / "k_values.json"
     # 日志文件
     LOG_FILE = OUTPUT_DIR / "aggregation_log.txt"
 
@@ -30,10 +31,10 @@ class M5Config:
 
     # ==================== 数据源配置 ====================
     # 输入表：M4-b的情感分析结果表
-    INPUT_TABLE = 'yq_inference_all'
+    INPUT_TABLE = 'yq_inference_all_2'
 
     # 输出表：日度聚合结果表
-    OUTPUT_TABLE = 'yq_sentiment_daily'
+    OUTPUT_TABLE = 'yq_sentiment_daily_2'
 
     # 景区列表
     SCENIC_NAMES = ['响沙湾', '鄂尔多斯草原']
@@ -68,6 +69,9 @@ class M5Config:
         '消费': 'consumption_score',
         '服务': 'service_score'
     }
+
+    # 动态K值计算的分位数 (0.25 代表 25% 分位数) (新增)
+    BAYESIAN_QUANTILE = 0.25
 
     # ==================== 缺失值填充配置 ====================
     # 移动平均窗口大小（天数）

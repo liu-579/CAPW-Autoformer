@@ -1,6 +1,7 @@
 """
 数据融合与特征工程主程序
 功能：将日度情感数据与物理特征数据融合，并构建时序衍生特征
+修改记录：已添加"周期性回填"策略，利用第二年数据修复第一年头部缺失值
 """
 
 import pandas as pd
@@ -116,7 +117,8 @@ class DataFusionProcessor:
             self.log(f"物理数据读取失败：{e}", level='ERROR')
             return None
 
-        # Step C: 数据融合（Inner Join）
+        # Step C: 数据融合
+        # 建议：如果希望保留所有物理数据日期（即使无情感数据），可将 how='inner' 改为 'right' 或 'left'
         self.log("Step C - 执行数据融合（Inner Join）...")
         merged_data = sentiment_subset.merge(
             physical_data,
@@ -158,41 +160,108 @@ class DataFusionProcessor:
     def build_time_series_features(self, data):
         """
         构建时序衍生特征（滞后特征 + 移动平均特征）
-
-        参数:
-            data (pd.DataFrame): 融合后的原始数据
-
-        返回:
-            pd.DataFrame: 添加了时序特征的数据（已清除 NaN）
+        修改版：使用"周期性回填"策略修复头部缺失值
         """
         df = data.copy()
 
-        # 遍历每个情感维度字段
+        # =======================================================
+        # 1. 基础数据填充策略 (修复原始数据中的空洞)
+        # =======================================================
+        # 策略：前向填充 (Forward Fill)
+        # 逻辑：如果某天数据缺失，假设它与前一天持平。
+        df = df.ffill()
+
+        # 如果第一行就是空的（无法前向填充），则使用后向填充兜底
+        df = df.bfill()
+
+        # =======================================================
+        # 2. 特征生成循环
+        # =======================================================
         for col in config.SENTIMENT_COLS:
             if col not in df.columns:
                 self.log(f"警告：字段 {col} 不存在，跳过特征生成", level='WARNING')
                 continue
 
-            # 1. 构建滞后特征（Lag Features）
-            self.log(f"  正在为 {col} 构建滞后特征...")
+            # 构建滞后特征 (Lag)
             for lag in config.LAG_DAYS:
                 lag_col_name = config.get_lag_feature_name(col, lag)
                 df[lag_col_name] = df[col].shift(lag)
 
-            # 2. 构建移动平均特征（Rolling Mean Features）
-            # 注意：使用 shift(1) 确保不使用当天数据（避免数据泄露）
-            self.log(f"  正在为 {col} 构建移动平均特征（窗口={config.ROLLING_WINDOW}天）...")
+            # 构建移动平均特征 (Rolling)
             rolling_col_name = config.get_rolling_feature_name(col, config.ROLLING_WINDOW)
             df[rolling_col_name] = (
                 df[col]
-                .shift(1)  # 先向下移动1天，避免用到当天数据
+                .shift(1)  # 保持防泄露逻辑
                 .rolling(window=config.ROLLING_WINDOW, min_periods=1)
                 .mean()
             )
 
-        # 清除因滞后和移动平均产生的 NaN 行
-        self.log("  正在清除特征工程产生的缺失值...")
-        df_clean = df.dropna().reset_index(drop=True)
+        # =======================================================
+        # 3. 最终策略：周期性回填 (Seasonal Backfill)
+        # =======================================================
+
+        # 业务逻辑：
+        # 利用数据的强周期性（拥有两年数据），用"下一年同一天"的数据，
+        # 来填补"第一年"缺失的滞后特征。
+        # 目的：确保国庆七天的数据具有"国庆特征"，而不是被切除或被平日均值稀释。
+
+        df_clean = df.copy()
+
+        # 获取所有包含空值的行的索引（通常是前7-10行）
+        nan_indices = df_clean[df_clean.isnull().any(axis=1)].index
+
+        if len(nan_indices) > 0:
+            self.log(f"  检测到 {len(nan_indices)} 行头部缺失值，尝试使用'下一年'数据进行周期性回填...")
+
+        fill_count = 0
+
+        for idx in nan_indices:
+            # 获取当前行的日期
+            current_date = df_clean.loc[idx, config.DATE_FIELD]
+
+            # 计算"下一年"的日期 (处理闰年等情况)
+            next_year_date = current_date + pd.DateOffset(years=1)
+
+            # 在数据中查找下一年的那一行
+            future_row = df_clean[df_clean[config.DATE_FIELD] == next_year_date]
+
+            if not future_row.empty:
+                # 找到对应行，开始回填
+                future_idx = future_row.index[0]
+
+                # 遍历该行所有列
+                for col in df_clean.columns:
+                    # 如果当前列是空的（需要填补）
+                    if pd.isna(df_clean.loc[idx, col]):
+                        # 且未来那行对应的值不是空的（有资源可填）
+                        if not pd.isna(df_clean.loc[future_idx, col]):
+                            df_clean.loc[idx, col] = df_clean.loc[future_idx, col]
+                            fill_count += 1
+            else:
+                # 如果没找到下一年数据（可能数据不足两年，或该日期缺失），不做操作，留给后续兜底
+                pass
+
+        if fill_count > 0:
+            self.log(f"  周期性回填完成，共填补 {fill_count} 个空缺特征值")
+
+        # =======================================================
+        # 4. 兜底策略 (Fallback)
+        # =======================================================
+        # 如果还有空值（例如第二年也没有这一天），则使用均值填充作为最后的防线。
+        # 这样确保了不会有任何 NaN 进入模型。
+
+        cleaned_count = 0
+        for col in df_clean.columns:
+            if df_clean[col].isnull().any():
+                if pd.api.types.is_numeric_dtype(df_clean[col]):
+                    mean_val = df_clean[col].mean()
+                    df_clean[col].fillna(mean_val, inplace=True)
+                else:
+                    df_clean[col].bfill(inplace=True)
+                cleaned_count += 1
+
+        if cleaned_count > 0:
+            self.log(f"  已对剩余空缺列执行均值/后向填充兜底")
 
         return df_clean
 

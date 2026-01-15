@@ -12,9 +12,12 @@ from sqlalchemy import create_engine
 from sklearn.preprocessing import LabelEncoder
 import warnings
 import sys
+import datetime
+# 新增: 引入中国节假日库
+import chinese_calendar
 
 # 导入配置文件
-import config.m8a_config as config
+import config.m8a_config as config  # 假设你的目录结构是直接引用，如果是在 config 文件夹下请保持原样
 
 warnings.filterwarnings('ignore')
 
@@ -64,49 +67,19 @@ class ChineseDataCleaner:
 
             self.df = pd.read_sql(query, self.engine)
             print(f"✓ 读取数据成功: {len(self.df)} 行")
-            print(f"✓ 目标景区: {self.scenic_name}")
-            print(f"✓ 原始列数: {len(self.df.columns)}")
+
+            # --- 新增: 确保 date 列是 datetime 类型 ---
+            if 'date' in self.df.columns:
+                self.df['date'] = pd.to_datetime(self.df['date'])
+                print(f"✓ Date列已转换为 datetime 类型")
+            else:
+                raise ValueError("数据中缺少 'date' 列，无法进行时间特征工程")
 
             # 强制转换 passenger_count 为 float
             if 'passenger_count' in self.df.columns:
                 print("\n--- 修复 passenger_count 类型 (text → float) ---")
-                original_type = self.df['passenger_count'].dtype
-                print(f"原始类型: {original_type}")
 
-                # 尝试转换,记录失败的行
-                conversion_errors = []
-                for idx, value in self.df['passenger_count'].items():
-                    try:
-                        float(value)
-                    except (ValueError, TypeError):
-                        if 'id' in self.df.columns:
-                            conversion_errors.append({
-                                'id': self.df.loc[idx, 'id'],
-                                'row_index': idx,
-                                'value': value
-                            })
-                        else:
-                            conversion_errors.append({
-                                'id': 'N/A',
-                                'row_index': idx,
-                                'value': value
-                            })
-
-                if conversion_errors:
-                    print(f"\n⚠ 警告: 发现 {len(conversion_errors)} 行无法转换的数据:")
-                    print("需要人工审核的记录ID:")
-                    for error in conversion_errors[:10]:  # 最多显示10条
-                        print(f"  - ID: {error['id']}, Row: {error['row_index']}, Value: '{error['value']}'")
-                    if len(conversion_errors) > 10:
-                        print(f"  ... 还有 {len(conversion_errors) - 10} 条记录")
-
-                    # 询问是否继续
-                    user_input = input("\n是否继续清洗(将这些行的passenger_count设为NaN)? (y/n): ")
-                    if user_input.lower() != 'y':
-                        print("清洗中止")
-                        sys.exit(0)
-
-                # 执行转换
+                # 简单处理非数值，强制转换
                 self.df['passenger_count'] = pd.to_numeric(
                     self.df['passenger_count'],
                     errors='coerce'
@@ -119,65 +92,78 @@ class ChineseDataCleaner:
             raise
 
     def encode_chinese_features(self):
-        """Step 2: 中文特征编码"""
+        """Step 2: 特征工程 (周期性编码与节假日处理)"""
         print(f"\n{'=' * 60}")
-        print("Step 2: 中文特征编码 (解决空值问题的关键)")
+        print("Step 2: 高级特征工程 (周期性时间 & 中国节假日)")
         print(f"{'=' * 60}")
 
-        # 2.1 节假日二值化处理
-        if 'holiday' in self.df.columns:
-            print("\n--- 2.1 节假日二值化 (Holiday → is_holiday_int) ---")
-            print(f"原始值分布:\n{self.df['holiday'].value_counts(dropna=False)}")
+        # ==========================================
+        # 任务 1: 月份特征 (周期性编码)
+        # ==========================================
+        print("\n--- 2.1 月份周期性编码 (Month Cyclic) ---")
+        # 提取月份 (1-12)
+        months = self.df['date'].dt.month
 
-            # 执行二值化: 非节假日或空值→0, 其他→1
-            self.df['is_holiday_int'] = self.df['holiday'].apply(
-                lambda x: 0 if (pd.isna(x) or x == config.HOLIDAY_NORMAL_VALUE) else 1
-            )
+        # 周期性编码公式: sin(2 * pi * month / 12)
+        self.df['month_sin'] = np.sin(2 * np.pi * months / 12)
+        self.df['month_cos'] = np.cos(2 * np.pi * months / 12)
 
-            print(f"\n编码后分布:")
-            print(f"  0 (非节假日): {(self.df['is_holiday_int'] == 0).sum()} 行")
-            print(f"  1 (节假日):   {(self.df['is_holiday_int'] == 1).sum()} 行")
+        print(f"✓ 生成列: month_sin, month_cos")
+        print(self.df[['date', 'month_sin', 'month_cos']].head(3))
 
-            self.encoding_mappings['holiday'] = {
-                0: '非节假日',
-                1: '节假日(春节/国庆等)'
-            }
+        # ==========================================
+        # 任务 2: 星期特征 (周期性编码)
+        # ==========================================
+        print("\n--- 2.2 星期周期性编码 (Weekday Cyclic) ---")
+        # 提取星期 (0=周一, 6=周日)
+        weekdays = self.df['date'].dt.dayofweek
 
-        # 2.2 星期固定字典映射
-        if 'day_of_week' in self.df.columns:
-            print("\n--- 2.2 星期固定映射 (防止排序混乱) ---")
-            print(f"原始值分布:\n{self.df['day_of_week'].value_counts(dropna=False)}")
+        # 周期性编码公式: sin(2 * pi * weekday / 7)
+        self.df['day_sin'] = np.sin(2 * np.pi * weekdays / 7)
+        self.df['day_cos'] = np.cos(2 * np.pi * weekdays / 7)
 
-            self.df['day_of_week_int'] = self.df['day_of_week'].map(
-                config.DAY_OF_WEEK_MAPPING
-            )
+        print(f"✓ 生成列: day_sin, day_cos")
+        print(self.df[['date', 'day_sin', 'day_cos']].head(3))
 
-            print(f"\n映射规则:")
-            for chinese, num in sorted(config.DAY_OF_WEEK_MAPPING.items(), key=lambda x: x[1]):
-                count = (self.df['day_of_week_int'] == num).sum()
-                print(f"  {num} = {chinese} ({count} 行)")
+        # ==========================================
+        # 任务 3: 是否休息日 (基于 chinese_calendar)
+        # ==========================================
+        print("\n--- 2.3 智能节假日判断 (Chinese Calendar) ---")
+        print("正在计算复杂的调休逻辑，请稍候...")
 
-            # 检查未映射的值
-            unmapped = self.df[self.df['day_of_week_int'].isna()]['day_of_week'].unique()
-            if len(unmapped) > 0:
-                print(f"\n⚠ 警告: 发现未映射的星期值: {unmapped}")
+        # 定义判断函数
+        def check_is_day_off(date_val):
+            # chinese_calendar.is_workday(date) 返回 True 表示是工作日（含补班）
+            # 我们需要 is_day_off: 1=休息(含节假日), 0=上班(含补班)
+            # 所以需要取反
+            is_work = chinese_calendar.is_workday(date_val)
+            return 0 if is_work else 1
 
-            self.encoding_mappings['day_of_week'] = config.DAY_OF_WEEK_MAPPING
+        self.df['is_day_off'] = self.df['date'].apply(lambda x: check_is_day_off(x))
 
-        # 2.3 天气状况 LabelEncoder
+        count_off = self.df['is_day_off'].sum()
+        count_work = len(self.df) - count_off
+        print(f"✓ 生成列: is_day_off (处理了调休)")
+        print(f"  - 休息状态 (1): {count_off} 天")
+        print(f"  - 工作状态 (0): {count_work} 天")
+
+        self.encoding_mappings['is_day_off'] = {0: '工作/补班', 1: '周末/节假日'}
+
+        # ==========================================
+        # 原有的 LabelEncoder (天气与风向)
+        # ==========================================
+        # 2.4 天气状况 LabelEncoder
         if 'weather_cond' in self.df.columns:
-            print("\n--- 2.3 天气状况编码 (LabelEncoder) ---")
+            print("\n--- 2.4 天气状况编码 (LabelEncoder) ---")
             self._encode_with_label_encoder('weather_cond', 'weather_cond_int')
 
-        # 2.4 风向 LabelEncoder
+        # 2.5 风向 LabelEncoder
         if 'wind_dir' in self.df.columns:
-            print("\n--- 2.4 风向编码 (LabelEncoder) ---")
+            print("\n--- 2.5 风向编码 (LabelEncoder) ---")
             self._encode_with_label_encoder('wind_dir', 'wind_dir_int')
 
     def _encode_with_label_encoder(self, col_name, new_col_name):
         """使用 LabelEncoder 编码,并打印映射关系"""
-        print(f"原始值分布:\n{self.df[col_name].value_counts(dropna=False)}")
-
         # 处理空值: 填充为 "未知"
         temp_col = self.df[col_name].fillna('未知')
 
@@ -185,15 +171,13 @@ class ChineseDataCleaner:
         le = LabelEncoder()
         self.df[new_col_name] = le.fit_transform(temp_col)
 
-        # 打印映射关系
-        print(f"\n编码映射关系:")
+        # 记录映射关系
         mapping = {}
         for idx, label in enumerate(le.classes_):
-            count = (self.df[new_col_name] == idx).sum()
-            print(f"  {idx} = {label} ({count} 行)")
             mapping[idx] = label
 
         self.encoding_mappings[col_name] = mapping
+        print(f"✓ {col_name} 编码完成，类别数: {len(le.classes_)}")
 
     def strong_cleaning(self):
         """Step 3: 强力数据清洗"""
@@ -206,73 +190,50 @@ class ChineseDataCleaner:
 
         # 3.1 删除全空列
         if config.DROP_EMPTY_COLS:
-            print("\n--- 3.1 删除全空列 ---")
-            empty_cols = self.df.columns[self.df.isna().all()].tolist()
-            if empty_cols:
-                print(f"发现全空列: {empty_cols}")
-                self.df = self.df.drop(columns=empty_cols)
-                print(f"✓ 已删除 {len(empty_cols)} 个全空列")
-            else:
-                print("✓ 未发现全空列")
+            self.df = self.df.dropna(axis=1, how='all')
 
-        # 3.2 删除空行 (处理滞后特征产生的NaN)
+        # 3.2 删除空行
         if config.DROP_EMPTY_ROWS:
-            print("\n--- 3.2 删除空行 (滞后特征NaN) ---")
-            rows_before = len(self.df)
             self.df = self.df.dropna()
-            rows_after = len(self.df)
-            deleted_rows = rows_before - rows_after
-            if deleted_rows > 0:
-                print(f"✓ 已删除 {deleted_rows} 行 (包含NaN的行)")
-            else:
-                print("✓ 未发现空行")
 
-        # 3.3 删除常数列
+        # 3.3 删除常数列 (排除保留列)
         if config.DROP_CONSTANT_COLS:
-            print("\n--- 3.3 删除常数列 (方差=0) ---")
-
-            # 只检查数值列
+            print("\n--- 检查常数列 ---")
             numeric_cols = self.df.select_dtypes(include=[np.number]).columns.tolist()
+            # 排除保留列和新生成的特征
+            preserve_cols = set(config.PRESERVE_COLS +
+                                ['is_day_off', 'month_sin', 'month_cos', 'day_sin', 'day_cos'])
 
-            # 排除保留列
-            preserve_cols = set(config.PRESERVE_COLS + ['is_holiday_int'])
             check_cols = [col for col in numeric_cols if col not in preserve_cols]
 
-            constant_cols = []
+            cols_to_drop = []
             for col in check_cols:
-                variance = self.df[col].var()
-                if variance == config.VARIANCE_THRESHOLD:
-                    constant_cols.append(col)
-                    print(f"  - {col}: 方差={variance:.6f}, 唯一值={self.df[col].nunique()}")
+                if self.df[col].std() == 0:  # std=0 等同于方差=0
+                    cols_to_drop.append(col)
 
-            if constant_cols:
-                self.df = self.df.drop(columns=constant_cols)
-                print(f"✓ 已删除 {len(constant_cols)} 个常数列")
-            else:
-                print("✓ 未发现常数列")
+            if cols_to_drop:
+                self.df = self.df.drop(columns=cols_to_drop)
+                print(f"✓ 已删除常数列: {cols_to_drop}")
 
-        # 删除原始中文列 (保留编码后的列)
-        print("\n--- 3.4 删除原始中文列 (保留编码列) ---")
+        # 3.4 删除原始中文列
+        print("\n--- 删除原始中文列 ---")
+        # 配置文件中定义的 TEXT_COLS 里的列，如果在 df 中存在，则删除
         text_cols_to_drop = [col for col in config.TEXT_COLS.keys() if col in self.df.columns]
         if text_cols_to_drop:
             self.df = self.df.drop(columns=text_cols_to_drop)
-            print(f"✓ 已删除原始中文列: {text_cols_to_drop}")
+            print(f"✓ 已删除原始文本列: {text_cols_to_drop}")
 
         final_shape = self.df.shape
         print(f"\n清洗后: {final_shape[0]} 行 × {final_shape[1]} 列")
-        print(f"删除: {initial_shape[0] - final_shape[0]} 行, {initial_shape[1] - final_shape[1]} 列")
 
     def output_results(self):
         """Step 4: 结果输出"""
         print(f"\n{'=' * 60}")
-        print("Step 4: 结果输出 (Human-Readable)")
+        print("Step 4: 结果输出")
         print(f"{'=' * 60}")
 
         # 4.1 保存到 MySQL
         table_name = f"{config.OUTPUT_TABLE_PREFIX}_{self.scenic_name}"
-        print(f"\n--- 4.1 保存到 MySQL ---")
-        print(f"目标表: {table_name}")
-
         try:
             self.df.to_sql(
                 table_name,
@@ -281,52 +242,32 @@ class ChineseDataCleaner:
                 index=False,
                 chunksize=1000
             )
-            print(f"✓ MySQL 保存成功: {len(self.df)} 行")
+            print(f"✓ MySQL 保存成功: {table_name}")
         except Exception as e:
             print(f"✗ MySQL 保存失败: {e}")
 
         # 4.2 保存到 CSV
         csv_filename = f"{config.CSV_OUTPUT_PREFIX}_{self.scenic_name}.csv"
-        print(f"\n--- 4.2 保存到 CSV ---")
-        print(f"文件名: {csv_filename}")
-
         try:
             self.df.to_csv(
                 csv_filename,
                 index=False,
                 encoding=config.CSV_ENCODING
             )
-            print(f"✓ CSV 保存成功 (带BOM头,防止Excel中文乱码)")
+            print(f"✓ CSV 保存成功: {csv_filename}")
         except Exception as e:
             print(f"✗ CSV 保存失败: {e}")
 
-        # 4.3 打印编码映射摘要
-        if config.SHOW_ENCODING_MAPPING:
-            print(f"\n{'=' * 60}")
-            print("编码映射关系汇总 (供人工核对)")
-            print(f"{'=' * 60}")
-            for col_name, mapping in self.encoding_mappings.items():
-                print(f"\n【{col_name}】")
-                for code, label in sorted(mapping.items()):
-                    print(f"  {code} → {label}")
-
-        # 4.4 数据预览
-        print(f"\n{'=' * 60}")
-        print("清洗后数据预览 (前5行)")
-        print(f"{'=' * 60}")
+        # 4.3 打印预览
+        print(f"\n数据列预览:")
+        print(self.df.columns.tolist())
+        print(f"\n前5行数据:")
         print(self.df.head())
-
-        print(f"\n{'=' * 60}")
-        print("数据列名")
-        print(f"{'=' * 60}")
-        print(f"共 {len(self.df.columns)} 列:")
-        for i, col in enumerate(self.df.columns, 1):
-            print(f"  {i}. {col}")
 
     def run(self):
         """执行完整的清洗流程"""
         print(f"\n{'#' * 60}")
-        print(f"# M8A 数据清洗流程启动")
+        print(f"# M8A 数据清洗流程启动 (Enhanced Feature Engineering)")
         print(f"# 目标景区: {self.scenic_name}")
         print(f"{'#' * 60}")
 

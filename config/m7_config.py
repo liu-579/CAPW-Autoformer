@@ -14,10 +14,10 @@ DB_CONFIG = {
 
 # ==================== 表名配置 ====================
 # 情感数据源表名（存储每日各景区的情感分析结果）
-SENTIMENT_TABLE = 'yq_sentiment_daily'
+SENTIMENT_TABLE = 'yq_sentiment_daily_2'
 
 # 最终融合数据的输出表名（用于机器学习训练的宽表）
-OUTPUT_TABLE = 'fused_training_data'
+OUTPUT_TABLE = 'fused_training_data_2'
 
 # ==================== 景区映射配置 ====================
 # 关键映射字典：将情感表中的景区名称映射到其对应的物理特征数据表
