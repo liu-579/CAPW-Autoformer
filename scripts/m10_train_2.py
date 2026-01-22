@@ -31,7 +31,7 @@ warnings.filterwarnings('ignore')
 # 导入模型和配置
 sys.path.append('.')
 from m9_model_2 import build_model
-from config.m9_config_flash import ModelConfig
+from config.m9_config import ModelConfig
 from config.m10_config import TrainingConfig as cfg
 
 

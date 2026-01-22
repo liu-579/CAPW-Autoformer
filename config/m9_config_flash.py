@@ -18,13 +18,13 @@ class ModelConfig:
     d_model = 64  # 隐藏层维度 (Embedding维度)
     nhead = 4  # 多头注意力头数 (必须能被 d_model 整除)
     num_layers = 2  # Transformer Encoder 层数
-    dim_feedforward = 256  # 前馈网络隐藏层维度 (通常是 d_model 的 4 倍)
-    dropout = 0.2  # Dropout 比率
+    dim_feedforward = 4*d_model  # 前馈网络隐藏层维度 (通常是 d_model 的 4 倍)
+    dropout = 0.1  # Dropout 比率
 
     # ==================== 权重网络参数 ====================
 
     # Context-Aware Weight Network 参数
-    weight_net_hidden_dim = 64  # 权重网络隐藏层维度
+    weight_net_hidden_dim = 32  # 权重网络隐藏层维度
     weight_net_num_heads = 4  # 权重网络的注意力头数
     weight_net_num_layers = 1  # 权重网络的 Transformer 层数
     weight_net_dropout = 0.1  # 权重网络的 Dropout

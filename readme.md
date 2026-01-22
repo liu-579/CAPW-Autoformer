@@ -97,3 +97,50 @@ Loss = α * MSE + β * (1 - Pearson_r)
 2. 更换损失函数为ccc，并考虑加权mse
 3. 优化lpearson r计算方式，现不以整个批次进行衡量，而是每个样本单独衡量，累计计算
 4. 调整m9模型的动态网络激活函数，由softmax替换为Tanh 激活，增加情感权重
+# 2026.1.15（超参数优化）
+## 优化学习率(已最优)
+### 1e-3（4.2版本）
+"RMSE": 5733.896135402872,
+    "MAE": 3742.7480218205806,
+    "MAPE": 24.592680940716868,
+    "Pearson_R": 0.5177726827952722
+## 优化网络结构()
+### 最优结构
+ # ==================== 模型核心架构参数 ====================
+
+    # Transformer Backbone 参数
+    d_model = 64  # 隐藏层维度 (Embedding维度)
+    nhead = 4  # 多头注意力头数 (必须能被 d_model 整除)
+    num_layers = 2  # Transformer Encoder 层数
+    dim_feedforward = 4*d_model  # 前馈网络隐藏层维度 (通常是 d_model 的 4 倍)
+    dropout = 0.1  # Dropout 比率
+
+    # ==================== 权重网络参数 ====================
+
+    # Context-Aware Weight Network 参数
+    weight_net_hidden_dim = 32  # 权重网络隐藏层维度
+    weight_net_num_heads = 4  # 权重网络的注意力头数
+    weight_net_num_layers = 1  # 权重网络的 Transformer 层数
+    weight_net_dropout = 0.1  # 权重网络的 Dropout
+### 结果
+      RMSE:      4859.8208
+      MAE:       3867.2333
+      MAPE:      34.79%
+      Pearson R: 0.5991
+## 优化动态权重比例
+### 最优比例
+    # 【新增】自适应峰值加权配置 (Adaptive Weighted MSE)
+    # 目的：解决削峰问题，强迫模型关注高数值样本
+    USE_ADAPTIVE_WEIGHT = True  # 是否启用自适应加权
+
+    PEAK_SIGMA = 1.5  # 阈值界定: Mean + Sigma * Std (建议 1.5 或 2.0)
+    PEAK_PENALTY_WEIGHT = 10  # 超过阈值的样本，Loss 权重放大倍数 (建议 5.0 - 10.0)
+
+    # 加权 MSE 在总 Loss 中的系数
+    # Total Loss = (1 - CCC) + LOSS_WEIGHT_PEAK_MSE * WeightedMSE
+    LOSS_WEIGHT_PEAK_MSE = 0.5
+### 结果
+      RMSE:      4824.5790
+      MAE:       3814.6102
+      MAPE:      34.10%
+      Pearson R: 0.5959

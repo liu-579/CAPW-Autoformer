@@ -292,7 +292,7 @@ class DynamicFusionPredictor(nn.Module):
 
         self.backbone = TimeSeriesBackbone(
             input_dim=self.total_sentiment_dim + self.context_dim,
-            seq_len=30,
+            seq_len=config.seq_len,
             config=config
         )
 

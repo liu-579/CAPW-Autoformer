@@ -15,13 +15,13 @@ class TrainingConfig:
     # 项目根目录
     BASE_DIR = Path(__file__).parent.parent
 
-    scenic_name = "xsw"
+    scenic_name = "eedscy"
 
     # m8b 输出目录 (数据来源)
-    DATA_DIR = BASE_DIR / f"data/output/m8b_{scenic_name}_2.0"  # 输入目录
+    DATA_DIR = BASE_DIR / f"data/output/m8b_{scenic_name}_hourly"  # 输入目录
 
     # m10 输出目录 (模型保存)
-    SAVE_DIR = Path(BASE_DIR / f'data/output/m10_checkpoints_{scenic_name}_4.2_f')
+    SAVE_DIR = Path(BASE_DIR / f'data/output/m10_checkpoints_{scenic_name}_h_1')
 
     # 数据文件路径
     TRAIN_X = DATA_DIR / 'train_x.npy'
@@ -37,12 +37,12 @@ class TrainingConfig:
 
     # ==================== 训练基础参数 ====================
 
-    BATCH_SIZE = 16  # 批次大小
+    BATCH_SIZE = 64  # 批次大小
     NUM_EPOCHS = 1000  # 总训练轮数
-    LEARNING_RATE = 1e-3  # 初始学习率
+    LEARNING_RATE = 1e-4 # 初始学习率
 
     # 【修改】暂时设为 0，解除约束，让模型先学会拟合波动
-    WEIGHT_DECAY = 1e-3  # 权重衰减 (L2 正则化)
+    WEIGHT_DECAY = 1e-3 # 权重衰减 (L2 正则化)
 
     # ==================== 三阶段训练策略 ====================
 
@@ -78,7 +78,7 @@ class TrainingConfig:
     USE_ADAPTIVE_WEIGHT = True  # 是否启用自适应加权
 
     PEAK_SIGMA = 1.5  # 阈值界定: Mean + Sigma * Std (建议 1.5 或 2.0)
-    PEAK_PENALTY_WEIGHT = 25  # 超过阈值的样本，Loss 权重放大倍数 (建议 5.0 - 10.0)
+    PEAK_PENALTY_WEIGHT = 10  # 超过阈值的样本，Loss 权重放大倍数 (建议 5.0 - 10.0)
 
     # 加权 MSE 在总 Loss 中的系数
     # Total Loss = (1 - CCC) + LOSS_WEIGHT_PEAK_MSE * WeightedMSE
@@ -87,7 +87,7 @@ class TrainingConfig:
 
     # L1 正则化: 稀疏化权重
     # 【修改】设为 0.0，彻底解除稀疏约束，防止模型输出死直线
-    L1_LAMBDA = 0.0
+    L1_LAMBDA = 1e-5
 
     # 组间多样性正则化
     DIVERSITY_LAMBDA = 1e-5  # 多样性损失系数
@@ -118,7 +118,7 @@ class TrainingConfig:
     # 注意：在三阶段训练中，早停主要控制 Phase 3，
     # 但我们现在的逻辑是跑完所有 Epoch 以收集各阶段最佳模型
     EARLY_STOP = True
-    PATIENCE = 70
+    PATIENCE = 30
     MIN_DELTA = 1e-4
 
     # ==================== 梯度裁剪 ====================
