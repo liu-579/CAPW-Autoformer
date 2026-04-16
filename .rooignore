@@ -1,0 +1,24 @@
+# 排除大型模型权重文件（.pth, .pt, .pkl）
+data/output/**/*.pth
+data/output/**/*.pt
+data/output/**/*.pkl
+data/输出/**/*.pt
+data/输出/**/*.pth
+data/输出/**/*.pkl
+
+# 排除 Optuna 数据库
+data/output/hpo/*.db
+
+# 排除 numpy 数组文件
+**/*.npy
+**/*.npz
+
+
+
+# 排除旧版本大数据
+旧版本/m8_xsw/
+
+# 排除 Roo Code 自身的 task checkpoints（避免递归）
+.git/
+# 排除 Roo Code 自身的 task checkpoints（避免递归）
+.git/

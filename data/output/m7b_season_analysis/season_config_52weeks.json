@@ -1,0 +1,388 @@
+{
+  "description": "52周淡旺季配置 (基于 Jenks Natural Breaks 分析)",
+  "generated_at": "2026-01-24 19:30:11",
+  "fiscal_year_start": "10-01",
+  "season_labels": {
+    "0": {
+      "name": "low",
+      "cn": "淡季",
+      "color": "#3498db"
+    },
+    "1": {
+      "name": "normal",
+      "cn": "平季",
+      "color": "#f39c12"
+    },
+    "2": {
+      "name": "peak",
+      "cn": "旺季",
+      "color": "#e74c3c"
+    }
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "date_range": "10-01 ~ 10-07",
+      "season_code": 2,
+      "season_name": "peak",
+      "season_cn": "旺季"
+    },
+    {
+      "week": 2,
+      "date_range": "10-08 ~ 10-14",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 3,
+      "date_range": "10-15 ~ 10-21",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 4,
+      "date_range": "10-22 ~ 10-28",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 5,
+      "date_range": "10-29 ~ 11-04",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 6,
+      "date_range": "11-05 ~ 11-11",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 7,
+      "date_range": "11-12 ~ 11-18",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 8,
+      "date_range": "11-19 ~ 11-25",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 9,
+      "date_range": "11-26 ~ 12-02",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 10,
+      "date_range": "12-03 ~ 12-09",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 11,
+      "date_range": "12-10 ~ 12-16",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 12,
+      "date_range": "12-17 ~ 12-23",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 13,
+      "date_range": "12-24 ~ 12-30",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 14,
+      "date_range": "12-31 ~ 01-06",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 15,
+      "date_range": "01-07 ~ 01-13",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 16,
+      "date_range": "01-14 ~ 01-20",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 17,
+      "date_range": "01-21 ~ 01-27",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 18,
+      "date_range": "01-28 ~ 02-03",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 19,
+      "date_range": "02-04 ~ 02-10",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 20,
+      "date_range": "02-11 ~ 02-17",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 21,
+      "date_range": "02-18 ~ 02-24",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 22,
+      "date_range": "02-25 ~ 03-02",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 23,
+      "date_range": "03-03 ~ 03-09",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 24,
+      "date_range": "03-10 ~ 03-16",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 25,
+      "date_range": "03-17 ~ 03-23",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 26,
+      "date_range": "03-24 ~ 03-30",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 27,
+      "date_range": "03-31 ~ 04-06",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 28,
+      "date_range": "04-07 ~ 04-13",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 29,
+      "date_range": "04-14 ~ 04-20",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 30,
+      "date_range": "04-21 ~ 04-27",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 31,
+      "date_range": "04-28 ~ 05-04",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 32,
+      "date_range": "05-05 ~ 05-11",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 33,
+      "date_range": "05-12 ~ 05-18",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 34,
+      "date_range": "05-19 ~ 05-25",
+      "season_code": 0,
+      "season_name": "low",
+      "season_cn": "淡季"
+    },
+    {
+      "week": 35,
+      "date_range": "05-26 ~ 06-01",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 36,
+      "date_range": "06-02 ~ 06-08",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 37,
+      "date_range": "06-09 ~ 06-15",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 38,
+      "date_range": "06-16 ~ 06-22",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 39,
+      "date_range": "06-23 ~ 06-29",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 40,
+      "date_range": "06-30 ~ 07-06",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 41,
+      "date_range": "07-07 ~ 07-13",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 42,
+      "date_range": "07-14 ~ 07-20",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 43,
+      "date_range": "07-21 ~ 07-27",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 44,
+      "date_range": "07-28 ~ 08-03",
+      "season_code": 2,
+      "season_name": "peak",
+      "season_cn": "旺季"
+    },
+    {
+      "week": 45,
+      "date_range": "08-04 ~ 08-10",
+      "season_code": 2,
+      "season_name": "peak",
+      "season_cn": "旺季"
+    },
+    {
+      "week": 46,
+      "date_range": "08-11 ~ 08-17",
+      "season_code": 2,
+      "season_name": "peak",
+      "season_cn": "旺季"
+    },
+    {
+      "week": 47,
+      "date_range": "08-18 ~ 08-24",
+      "season_code": 2,
+      "season_name": "peak",
+      "season_cn": "旺季"
+    },
+    {
+      "week": 48,
+      "date_range": "08-25 ~ 08-31",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 49,
+      "date_range": "09-01 ~ 09-07",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 50,
+      "date_range": "09-08 ~ 09-14",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 51,
+      "date_range": "09-15 ~ 09-21",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    },
+    {
+      "week": 52,
+      "date_range": "09-22 ~ 09-28",
+      "season_code": 1,
+      "season_name": "normal",
+      "season_cn": "平季"
+    }
+  ]
+}

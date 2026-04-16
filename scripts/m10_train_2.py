@@ -9,8 +9,13 @@ Unified Joint Training Pipeline with CCC Loss & Adaptive MSE
 2. 统一早停和最佳模型判断标准为 CCC Loss
 3. 【新增】启动时自动统计训练集分布，计算动态峰值阈值 (Mean + N*Std)
 4. 【新增】自适应加权 MSE：对超过阈值的样本施加重罚，强迫模型拟合高峰
+5. 【修正】验证集模型选择指标与训练目标对齐：
+   - 验证集增加 Composite Selection Loss = CCC + λ·WeightedMSE
+   - 早停 / 最佳模型判断均基于 Composite Loss，解决训练-验证指标不对称问题
+   - 当 USE_ADAPTIVE_WEIGHT=False 时, Composite=CCC, 行为完全不变
 """
 
+import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -25,6 +30,7 @@ import warnings
 import sys
 from datetime import datetime
 import matplotlib.pyplot as plt
+import platform
 
 warnings.filterwarnings('ignore')
 
@@ -57,43 +63,63 @@ class TemperatureScheduler:
 
 
 class MetricsCalculator:
-    """评估指标计算器"""
+    """评估指标计算器 (支持 MinMaxScaler 和 StandardScaler)"""
 
     def __init__(self, scaler_data):
         if isinstance(scaler_data, dict) and 'target_scaler' in scaler_data:
             self.scaler = scaler_data['target_scaler']
             self.meta = scaler_data.get('meta', {})
             self.is_log1p = self.meta.get('target_log1p', False)
+            # [新增] 从 meta 中读取 scaler 类型，如果没有则自动检测
+            self.scaler_type = self.meta.get('target_scaler_type', None)
         else:
             self.scaler = scaler_data
             self.is_log1p = False
+            self.scaler_type = None
 
-        if hasattr(self.scaler, 'scale_'):
+        # 自动检测 scaler 类型
+        if self.scaler_type is None:
+            if hasattr(self.scaler, 'min_'):
+                self.scaler_type = 'minmax'
+            elif hasattr(self.scaler, 'mean_'):
+                self.scaler_type = 'standard'
+            else:
+                raise ValueError(f"不支持的 scaler 类型: {type(self.scaler)}")
+
+        # 提取 scaler 参数
+        if self.scaler_type == 'minmax':
             self.scale_ = self.scaler.scale_[0]
             self.min_ = self.scaler.min_[0]
-            self.scaler_type = 'minmax'
-        elif hasattr(self.scaler, 'mean_'):
+        elif self.scaler_type == 'standard':
             self.mean_ = self.scaler.mean_[0]
-            self.scale_ = self.scaler.scale_[0]
-            self.scaler_type = 'standard'
-        else:
-            raise ValueError(f"不支持的 scaler 类型: {type(self.scaler)}")
+            self.std_ = self.scaler.scale_[0]  # StandardScaler 的 scale_ 就是 std
+        
+        print(f"📊 MetricsCalculator 初始化:")
+        print(f"   Scaler 类型: {self.scaler_type}")
+        print(f"   Log1p 变换: {self.is_log1p}")
 
     def inverse_transform(self, y):
+        """逆变换：归一化空间 → 原始空间"""
         if isinstance(y, torch.Tensor):
             y = y.detach().cpu().numpy()
         y = y.astype(np.float64)
 
+        # Step 1: 逆 Scaler 变换
         if self.scaler_type == 'minmax':
+            # MinMax 逆变换: y_original = (y_scaled - min_) / scale_
+            # 注意：sklearn 的 MinMaxScaler 存储的是 scale_ = 1/(max-min), min_ = -min*scale_
             y_restored = (y - self.min_) / self.scale_
         elif self.scaler_type == 'standard':
-            y_restored = y * self.scale_ + self.mean_
+            # Standard 逆变换: y_original = y_scaled * std + mean
+            y_restored = y * self.std_ + self.mean_
         else:
             y_restored = y
 
+        # Step 2: 逆 Log1p 变换
         if self.is_log1p:
             y_restored = np.expm1(y_restored)
 
+        # Step 3: 确保非负
         y_restored = np.maximum(y_restored, 0)
         return y_restored
 
@@ -104,12 +130,23 @@ class MetricsCalculator:
         mape = np.mean(np.abs((preds - targets) / (np.abs(targets) + epsilon))) * 100
         pearson_r = np.corrcoef(preds.flatten(), targets.flatten())[0, 1] if len(preds) > 1 else 0.0
 
+        # R² (拟合优度 / Coefficient of Determination)
+        # R² = 1 - SS_res / SS_tot
+        ss_res = np.sum((targets - preds) ** 2)
+        ss_tot = np.sum((targets - np.mean(targets)) ** 2)
+        r2 = 1.0 - ss_res / (ss_tot + epsilon)
+
         return {
             'RMSE': float(rmse),
             'MAE': float(mae),
             'MAPE': float(mape),
-            'Pearson_R': float(pearson_r)
+            'Pearson_R': float(pearson_r),
+            'R2': float(r2)
         }
+
+
+class HPOPruneTrial(RuntimeError):
+    """用于在超参数优化过程中显式中止当前 trial。"""
 
 
 class CCCLoss(nn.Module):
@@ -133,10 +170,18 @@ class CCCLoss(nn.Module):
             loss: scalar
         """
         # 确保输入维度一致，展平不需要的维度，保留 Batch (dim=0)
+        # 注意：squeeze(-1) 仅在最后一维 = 1 时生效；多步多维输出应用 reshape
         if pred.dim() > 2:
-            pred = pred.squeeze(-1)
+            # (Batch, Pred_Len, 1) → (Batch, Pred_Len)
+            if pred.shape[-1] == 1:
+                pred = pred.squeeze(-1)
+            else:
+                pred = pred.reshape(pred.shape[0], -1)
         if target.dim() > 2:
-            target = target.squeeze(-1)
+            if target.shape[-1] == 1:
+                target = target.squeeze(-1)
+            else:
+                target = target.reshape(target.shape[0], -1)
 
         # 1. 计算统计量 (在 Batch 维度 dim=0 上聚合)
         mean_pred = torch.mean(pred, dim=0)
@@ -173,7 +218,6 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.inf
 
     def __call__(self, val_metric):
         # 这里的 val_metric 是 Loss，越小越好
@@ -202,14 +246,26 @@ class UnifiedTrainer:
     """
 
     def __init__(self, model, train_loader, val_loader, test_loader,
-                 metrics_calculator, config=cfg):
+                 metrics_calculator, config=cfg, trial=None,
+                 trial_metric='best_val_ccc_loss', prune_enabled=False):
         self.model = model
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
         self.metrics_calc = metrics_calculator
         self.config = config
-
+        self.run_name = getattr(config, 'RUN_NAME', datetime.now().strftime('run_%Y%m%d_%H%M%S'))
+        self.experiment_log_csv = Path(getattr(config, 'EXPERIMENT_LOG_CSV', config.SAVE_DIR / 'experiment_results.csv'))
+        self.training_started_at = datetime.now()
+        self.training_finished_at = None
+        self.final_test_metrics = {}
+        self.final_test_ccc_loss = None
+        self.final_epoch_reached = 0
+        self.best_epoch = None
+        self.trial = trial
+        self.trial_metric = trial_metric
+        self.prune_enabled = prune_enabled
+ 
         # 1. 基础 Loss: CCC Loss
         self.criterion = CCCLoss()
         print(f"🔧 Loss Function: CCCLoss (Concordance Correlation Coefficient)")
@@ -224,6 +280,13 @@ class UnifiedTrainer:
         else:
             print("ℹ️ 自适应加权已禁用 (Config.USE_ADAPTIVE_WEIGHT = False)")
             self.peak_threshold = float('inf')  # 阈值无限大，实际上不会触发加权
+
+        # 打印模型选择策略
+        if getattr(self.config, 'USE_ADAPTIVE_WEIGHT', False):
+            _lambda = getattr(self.config, 'LOSS_WEIGHT_PEAK_MSE', 0.5)
+            print(f"📐 模型选择策略: Composite Loss = CCC + {_lambda} × WeightedMSE (与训练目标对齐)")
+        else:
+            print(f"📐 模型选择策略: Pure CCC Loss")
 
         # 早停对象
         if config.EARLY_STOP:
@@ -244,7 +307,8 @@ class UnifiedTrainer:
         )
 
         self.current_epoch = 0
-        self.best_val_loss = float('inf')
+        self.best_val_loss = float('inf')    # 复合选择损失 (CCC + λ·WeightedMSE)
+        self.best_val_ccc = float('inf')     # 最佳 epoch 对应的纯 CCC Loss
         self.training_log = []
 
     def _calculate_adaptive_threshold(self):
@@ -266,7 +330,8 @@ class UnifiedTrainer:
 
         # 计算统计量
         train_mean = torch.mean(all_targets).item()
-        train_std = torch.std(all_targets).item()
+        # 使用总体标准差 (unbiased=False, 与 CCCLoss 内部保持一致)
+        train_std = torch.std(all_targets, unbiased=False).item()
 
         # 定义动态阈值
         threshold = train_mean + sigma * train_std
@@ -297,6 +362,33 @@ class UnifiedTrainer:
             )
         return None
 
+    def _report_trial_result(self, epoch, train_loss, val_composite_loss,
+                             val_metrics, val_ccc_loss=None):
+        """向 HPO trial 上报中间结果，并在需要时触发剪枝。"""
+        if self.trial is None:
+            return
+
+        metric_candidates = {
+            'best_val_ccc_loss': val_composite_loss,   # 复合选择损失 (与模型选择对齐)
+            'val_loss': val_composite_loss,
+            'val_ccc_loss': val_ccc_loss if val_ccc_loss is not None else val_composite_loss,
+            'val_rmse': val_metrics.get('RMSE'),
+            'val_pearson': val_metrics.get('Pearson_R'),
+            'train_loss': train_loss,
+        }
+        report_value = metric_candidates.get(self.trial_metric)
+        if report_value is None:
+            raise KeyError(f"不支持的 trial_metric: {self.trial_metric}")
+
+        report_value = float(report_value)
+        self.trial.report(report_value, step=epoch + 1)
+        print(f"🧪 Trial 上报: step={epoch + 1}, metric={self.trial_metric}, value={report_value:.6f}")
+
+        if self.prune_enabled and self.trial.should_prune():
+            raise HPOPruneTrial(
+                f"Trial 在 epoch {epoch + 1} 被剪枝: {self.trial_metric}={report_value:.6f}"
+            )
+ 
     def train_epoch(self, epoch):
         self.model.train()
         for param in self.model.parameters():
@@ -309,7 +401,7 @@ class UnifiedTrainer:
         total_ccc_loss = 0.0
         total_peak_loss = 0.0
 
-        pbar = tqdm(self.train_loader, desc=f'Epoch {epoch}/{self.config.NUM_EPOCHS}')
+        pbar = tqdm(self.train_loader, desc=f'Epoch {epoch + 1}/{self.config.NUM_EPOCHS}')
 
         for x, y in pbar:
             x = x.to(self.device)
@@ -388,6 +480,9 @@ class UnifiedTrainer:
             })
 
         avg_loss = total_loss / len(self.train_loader)
+        avg_ccc_loss = total_ccc_loss / len(self.train_loader)
+        avg_peak_loss = total_peak_loss / len(self.train_loader)
+        # avg_ccc_loss / avg_peak_loss 可供外部调用方监控子项损失均值
         return avg_loss, current_temp
 
     @torch.no_grad()
@@ -408,32 +503,114 @@ class UnifiedTrainer:
         all_preds_tensor = torch.cat(all_preds, dim=0)
         all_targets_tensor = torch.cat(all_targets, dim=0)
 
-        # 计算验证集的 Loss (统一使用 CCC Loss 作为核心指标)
-        val_ccc_loss = self.criterion(all_preds_tensor, all_targets_tensor)
+        # 1. 计算纯 CCC Loss (学术核心指标)
+        val_ccc_loss = self.criterion(all_preds_tensor, all_targets_tensor).item()
 
-        # 评估指标 (Real Space) - 依然计算 RMSE 和 Pearson 供观察
+        # 2. 计算复合选择损失 (Composite Selection Loss)
+        #    与训练目标对齐: Composite = CCC Loss + λ × Adaptive Weighted MSE
+        #    当 USE_ADAPTIVE_WEIGHT=False 时, composite = ccc (行为不变)
+        val_composite_loss = val_ccc_loss
+        if getattr(self.config, 'USE_ADAPTIVE_WEIGHT', False):
+            pred_view = all_preds_tensor.view_as(all_targets_tensor)
+            mse_raw = (pred_view - all_targets_tensor) ** 2
+            weights = torch.ones_like(mse_raw)
+            peak_mask = all_targets_tensor > self.peak_threshold
+            penalty = getattr(self.config, 'PEAK_PENALTY_WEIGHT', 5.0)
+            weights[peak_mask] = penalty
+            weighted_mse = (weights * mse_raw).mean()
+            lambda_peak = getattr(self.config, 'LOSS_WEIGHT_PEAK_MSE', 0.5)
+            val_composite_loss += lambda_peak * weighted_mse.item()
+
+        # 评估指标 (Real Space) - 计算 RMSE / Pearson / R² 供观察
         preds_real = self.metrics_calc.inverse_transform(all_preds_tensor)
         targets_real = self.metrics_calc.inverse_transform(all_targets_tensor)
 
         metrics = self.metrics_calc.compute_metrics(preds_real, targets_real)
 
-        # 返回 metrics, preds, targets, loss
-        return metrics, preds_real, targets_real, val_ccc_loss.item()
+        # 返回: metrics, preds, targets, 纯CCC损失, 复合选择损失
+        return metrics, preds_real, targets_real, val_ccc_loss, val_composite_loss
 
-    def save_best_model(self, val_loss):
-        """保存最佳模型 (基于 CCC Loss)"""
-        # Loss (1-CCC) 越小越好
-        if val_loss < self.best_val_loss:
-            self.best_val_loss = val_loss
+    def save_best_model(self, val_composite_loss, val_ccc_loss):
+        """保存最佳模型 (基于 Composite Selection Loss, 与训练目标对齐)"""
+        # Composite Loss 越小越好
+        if val_composite_loss < self.best_val_loss:
+            self.best_val_loss = val_composite_loss
+            self.best_val_ccc = val_ccc_loss
+            self.best_epoch = self.current_epoch + 1
             save_path = self.config.SAVE_DIR / 'best_model_unified.pth'
 
             checkpoint = {
                 'epoch': self.current_epoch,
                 'model_state_dict': self.model.state_dict(),
                 'optimizer_state_dict': self.optimizer.state_dict(),
-                'best_ccc_loss': val_loss
+                'best_composite_loss': val_composite_loss,
+                'best_ccc_loss': val_ccc_loss
             }
             torch.save(checkpoint, save_path)
+
+    def _get_latest_learning_rate(self):
+        """获取当前优化器学习率"""
+        return float(self.optimizer.param_groups[0]['lr'])
+
+    def _build_experiment_record(self):
+        """构建单次训练实验记录"""
+        model_params = ModelConfig.to_dict() if hasattr(ModelConfig, 'to_dict') else {}
+        train_params = self.config.to_dict() if hasattr(self.config, 'to_dict') else {}
+
+        best_log_entry = None
+        if self.training_log:
+            best_log_entry = min(self.training_log, key=lambda item: item['Val_Loss'])
+
+        record = {
+            'run_name': self.run_name,
+            'started_at': self.training_started_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'finished_at': self.training_finished_at.strftime('%Y-%m-%d %H:%M:%S') if self.training_finished_at else '',
+            'duration_seconds': round((self.training_finished_at - self.training_started_at).total_seconds(), 2) if self.training_finished_at else None,
+            'platform': platform.platform(),
+            'python_device': self.config.DEVICE,
+            'dataset_dir': str(self.config.DATA_DIR),
+            'save_dir': str(self.config.SAVE_DIR),
+            'train_samples': len(self.train_loader.dataset),
+            'val_samples': len(self.val_loader.dataset),
+            'test_samples': len(self.test_loader.dataset),
+            'epochs_planned': self.config.NUM_EPOCHS,
+            'epochs_completed': self.final_epoch_reached,
+            'best_epoch': self.best_epoch,
+            'best_val_ccc_loss': self.best_val_loss,     # Composite Selection Loss (HPO 向后兼容 key)
+            'best_val_pure_ccc': self.best_val_ccc,      # 最佳 epoch 的纯 CCC Loss
+            'final_test_ccc_loss': self.final_test_ccc_loss,
+            'final_test_rmse': self.final_test_metrics.get('RMSE'),
+            'final_test_mae': self.final_test_metrics.get('MAE'),
+            'final_test_mape': self.final_test_metrics.get('MAPE'),
+            'final_test_pearson_r': self.final_test_metrics.get('Pearson_R'),
+            'final_test_r2': self.final_test_metrics.get('R2'),
+            'peak_threshold': float(self.peak_threshold.detach().cpu().item()) if isinstance(self.peak_threshold, torch.Tensor) else float(self.peak_threshold),
+            'best_train_loss': best_log_entry['Train_Loss'] if best_log_entry else None,
+            'best_val_rmse': best_log_entry['Val_RMSE'] if best_log_entry else None,
+            'best_val_pearson': best_log_entry['Val_Pearson'] if best_log_entry else None,
+            'last_learning_rate': self._get_latest_learning_rate(),
+            'training_log_csv': str(self.config.SAVE_LOG),
+            'best_model_path': str(self.config.SAVE_DIR / 'best_model_unified.pth')
+        }
+
+        record.update({f'model_{k}': v for k, v in model_params.items()})
+        record.update({f'train_{k}': v for k, v in train_params.items()})
+        return record
+
+    def _append_experiment_record(self):
+        """将单次训练实验结果追加到 CSV"""
+        record = self._build_experiment_record()
+        record_df = pd.DataFrame([record])
+        csv_path = self.experiment_log_csv
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if csv_path.exists():
+            history_df = pd.read_csv(csv_path)
+            record_df = pd.concat([history_df, record_df], ignore_index=True)
+
+        record_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+        print(f"🧾 实验记录已追加保存: {csv_path}")
+        return record
 
     def train(self):
         print(f"\n{'=' * 70}")
@@ -447,10 +624,11 @@ class UnifiedTrainer:
 
         for epoch in range(self.config.NUM_EPOCHS):
             self.current_epoch = epoch
+            self.final_epoch_reached = epoch + 1
             train_loss, temp = self.train_epoch(epoch)
 
-            # 验证
-            val_metrics, _, _, val_loss = self.validate(self.val_loader, phase='Val')
+            # 验证 (返回纯CCC和复合选择损失)
+            val_metrics, _, _, val_ccc_loss, val_composite_loss = self.validate(self.val_loader, phase='Val')
 
             if self.scheduler is not None:
                 self.scheduler.step()
@@ -458,24 +636,30 @@ class UnifiedTrainer:
             log_entry = {
                 'Epoch': epoch + 1,
                 'Train_Loss': train_loss,
-                'Val_Loss': val_loss,  # CCC Loss
-                'Val_RMSE': val_metrics['RMSE'],  # Real Space
-                'Val_Pearson': val_metrics['Pearson_R']  # Real Space
+                'Val_Loss': val_composite_loss,     # Composite Selection Loss (模型选择依据)
+                'Val_CCC_Loss': val_ccc_loss,       # Pure CCC Loss (学术指标)
+                'Val_RMSE': val_metrics['RMSE'],    # Real Space
+                'Val_Pearson': val_metrics['Pearson_R'],  # Real Space
+                'Val_R2': val_metrics['R2']          # Real Space
             }
             self.training_log.append(log_entry)
+            self._report_trial_result(epoch, train_loss, val_composite_loss,
+                                      val_metrics, val_ccc_loss=val_ccc_loss)
 
             print(f"📊 Epoch {epoch + 1}: "
                   f"Loss={train_loss:.4f}, "
-                  f"Val_Loss(CCC)={val_loss:.4f}, "
+                  f"Val_Sel={val_composite_loss:.4f}, "
+                  f"Val_CCC={val_ccc_loss:.4f}, "
                   f"Val_RMSE={val_metrics['RMSE']:.2f}, "
-                  f"Pearson={val_metrics['Pearson_R']:.4f}")
+                  f"Pearson={val_metrics['Pearson_R']:.4f}, "
+                  f"R²={val_metrics['R2']:.4f}")
 
-            # 保存最佳模型
-            self.save_best_model(val_loss)
+            # 保存最佳模型 (基于复合选择损失)
+            self.save_best_model(val_composite_loss, val_ccc_loss)
 
-            # 早停
+            # 早停 (基于复合选择损失)
             if self.early_stopping:
-                self.early_stopping(val_loss)
+                self.early_stopping(val_composite_loss)
 
                 if self.early_stopping.early_stop:
                     print(f"\n🛑 早停触发！在第 {epoch + 1} 轮停止训练。")
@@ -484,9 +668,15 @@ class UnifiedTrainer:
         # 保存日志
         log_df = pd.DataFrame(self.training_log)
         log_df.to_csv(self.config.SAVE_LOG, index=False)
-        print(f"\n⏱️  总训练时长: {datetime.now() - start_time}")
+        self.training_finished_at = datetime.now()
+        print(f"\n⏱️  总训练时长: {self.training_finished_at - start_time}")
+
+        # 绘制训练过程曲线
+        print("\n🎨 正在绘制训练曲线...")
+        self.plot_training_curves()
 
         self.evaluate_final_model()
+        return self._append_experiment_record()
 
     def evaluate_final_model(self):
         model_path = self.config.SAVE_DIR / 'best_model_unified.pth'
@@ -499,18 +689,101 @@ class UnifiedTrainer:
         checkpoint = torch.load(model_path, weights_only=False)
         self.model.load_state_dict(checkpoint['model_state_dict'])
 
-        test_metrics, preds, targets, _ = self.validate(self.test_loader, phase='Test')
-
+        test_metrics, preds, targets, test_ccc_loss, _ = self.validate(self.test_loader, phase='Test')
+        self.final_test_metrics = test_metrics
+        self.final_test_ccc_loss = test_ccc_loss  # 测试集使用纯 CCC (学术报告指标)
+ 
         print(f"   📈 测试集最终结果 (Real Space):")
         print(f"      RMSE:      {test_metrics['RMSE']:.4f}")
         print(f"      MAE:       {test_metrics['MAE']:.4f}")
         print(f"      MAPE:      {test_metrics['MAPE']:.2f}%")
         print(f"      Pearson R: {test_metrics['Pearson_R']:.4f}")
+        print(f"      R²:        {test_metrics['R2']:.4f}")
 
         with open(self.config.SAVE_DIR / 'result_final.json', 'w') as f:
             json.dump(test_metrics, f, indent=4)
 
         self.plot_results(preds, targets, 'Final_Unified', test_metrics['RMSE'])
+
+    def plot_training_curves(self):
+        """
+        绘制训练过程中各指标随 Epoch 变化的曲线图
+        包含: Train Loss / Val Loss (CCC) / Val RMSE / Val Pearson R / Val R²
+        """
+        if not self.training_log:
+            print("⚠️  训练日志为空，跳过曲线绘制。")
+            return
+
+        log_df = pd.DataFrame(self.training_log)
+        epochs = log_df['Epoch'].values
+
+        fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+        fig.suptitle('Training Curves', fontsize=16, fontweight='bold')
+
+        # ── 子图1: Loss (Train & Val) ───────────────────────────────────
+        ax1 = axes[0, 0]
+        ax1.plot(epochs, log_df['Train_Loss'].values, label='Train Loss',
+                 color='steelblue', linewidth=1.5)
+        ax1.plot(epochs, log_df['Val_Loss'].values, label='Val Selection Loss',
+                 color='darkorange', linewidth=1.5, linestyle='--')
+        if 'Val_CCC_Loss' in log_df.columns:
+            ax1.plot(epochs, log_df['Val_CCC_Loss'].values, label='Val CCC Loss',
+                     color='forestgreen', linewidth=1.2, linestyle=':')
+        ax1.set_title('Loss (Selection & CCC)')
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('Loss')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+
+        # ── 子图2: Val RMSE ───────────────────────────────────────────────
+        ax2 = axes[0, 1]
+        ax2.plot(epochs, log_df['Val_RMSE'].values, label='Val RMSE',
+                 color='crimson', linewidth=1.5)
+        ax2.set_title('Validation RMSE')
+        ax2.set_xlabel('Epoch')
+        ax2.set_ylabel('RMSE')
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+
+        # ── 子图3: Val Pearson R ──────────────────────────────────────────
+        ax3 = axes[1, 0]
+        ax3.plot(epochs, log_df['Val_Pearson'].values, label='Val Pearson R',
+                 color='seagreen', linewidth=1.5)
+        ax3.set_title('Validation Pearson R')
+        ax3.set_xlabel('Epoch')
+        ax3.set_ylabel('Pearson R')
+        ax3.set_ylim(-1, 1)
+        ax3.axhline(y=0, color='gray', linestyle=':', linewidth=1)
+        ax3.legend()
+        ax3.grid(True, alpha=0.3)
+
+        # ── 子图4: Val R² ─────────────────────────────────────────────────
+        ax4 = axes[1, 1]
+        if 'Val_R2' in log_df.columns:
+            ax4.plot(epochs, log_df['Val_R2'].values, label='Val R²',
+                     color='mediumpurple', linewidth=1.5)
+            ax4.set_title('Validation R² (Coefficient of Determination)')
+            ax4.set_xlabel('Epoch')
+            ax4.set_ylabel('R²')
+            ax4.axhline(y=0, color='gray', linestyle=':', linewidth=1)
+            ax4.legend()
+            ax4.grid(True, alpha=0.3)
+        else:
+            ax4.set_visible(False)
+
+        # 标注最佳 epoch
+        if self.best_epoch is not None:
+            for ax in [ax1, ax2, ax3, ax4]:
+                if ax.get_visible():
+                    ax.axvline(x=self.best_epoch, color='gold', linewidth=1.5,
+                               linestyle='-.', label=f'Best Epoch ({self.best_epoch})')
+                    ax.legend()
+
+        plt.tight_layout()
+        save_path = self.config.SAVE_DIR / 'vis_training_curves.png'
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"   📈 训练曲线图已保存: {save_path}")
 
     def plot_results(self, preds, targets, name, rmse):
         """
@@ -587,20 +860,132 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 
-def main():
+
+def snapshot_config(config_cls):
+    """捕获配置类当前的可序列化属性，用于恢复现场"""
+    snapshot = {}
+    skipped_keys = []
+
+    for key, value in vars(config_cls).items():
+        if key.startswith('__'):
+            continue
+        if callable(value) or isinstance(value, (classmethod, staticmethod, property)):
+            skipped_keys.append(key)
+            continue
+
+        try:
+            snapshot[key] = copy.deepcopy(value)
+        except Exception as exc:
+            skipped_keys.append(f"{key}<{type(value).__name__}>:{exc}")
+
+    print(f"🧩 snapshot_config[{config_cls.__name__}] 已捕获 {len(snapshot)} 个属性")
+    if skipped_keys:
+        print(f"   ↪ 跳过属性: {skipped_keys}")
+    return snapshot
+
+
+
+def restore_config(config_cls, snapshot):
+    """恢复配置类属性"""
+    current_keys = [key for key in vars(config_cls).keys() if not key.startswith('__')]
+    skipped_keys = []
+
+    for key in current_keys:
+        value = vars(config_cls).get(key)
+        if callable(value) or isinstance(value, (classmethod, staticmethod, property)):
+            skipped_keys.append(key)
+            continue
+        if key not in snapshot:
+            delattr(config_cls, key)
+
+    for key, value in snapshot.items():
+        setattr(config_cls, key, copy.deepcopy(value))
+
+    print(f"♻️ restore_config[{config_cls.__name__}] 已恢复 {len(snapshot)} 个属性")
+    if skipped_keys:
+        print(f"   ↪ 保留描述符属性: {skipped_keys}")
+
+
+
+def apply_overrides(config_cls, overrides=None):
+    """批量覆盖配置类属性"""
+    if not overrides:
+        return
+    for key, value in overrides.items():
+        if not hasattr(config_cls, key):
+            raise AttributeError(f"{config_cls.__name__} 不存在属性: {key}")
+        setattr(config_cls, key, value)
+
+
+
+def refresh_training_paths(config=cfg):
+    """当 DATA_DIR 或 SAVE_DIR 被覆盖后，刷新派生路径"""
+    config.TRAIN_X = config.DATA_DIR / 'train_x.npy'
+    config.TRAIN_Y = config.DATA_DIR / 'train_y.npy'
+    config.VAL_X = config.DATA_DIR / 'val_x.npy'
+    config.VAL_Y = config.DATA_DIR / 'val_y.npy'
+    config.TEST_X = config.DATA_DIR / 'test_x.npy'
+    config.TEST_Y = config.DATA_DIR / 'test_y.npy'
+    config.FEATURE_MAP = config.DATA_DIR / 'feature_map.json'
+    config.SCALER_PATH = config.DATA_DIR / 'scalers.pkl'
+    config.SAVE_LOG = config.SAVE_DIR / 'training_log.csv'
+    config.SAVE_LATEST_MODEL = config.SAVE_DIR / 'latest_model.pth'
+    config.EXPERIMENT_LOG_CSV = config.SAVE_DIR / 'experiment_results.csv'
+    config.SAVE_BEST_MODEL_PHASE1 = config.SAVE_DIR / 'best_model_phase1.pth'
+    config.SAVE_BEST_MODEL_PHASE2 = config.SAVE_DIR / 'best_model_phase2.pth'
+    config.SAVE_BEST_MODEL_PHASE3 = config.SAVE_DIR / 'best_model_phase3.pth'
+
+
+
+def main(training_overrides=None, model_overrides=None, reset_model_config=True,
+         restore_after_run=False, trial=None, trial_metric='best_val_ccc_loss',
+         prune_enabled=False):
     print(f"\n{'=' * 70}\nM10 统一联合训练 (Adaptive Peak Weighting)\n{'=' * 70}")
-    set_seed(cfg.SEED)
-    cfg.setup_dirs()
 
-    train_x, train_y, val_x, val_y, test_x, test_y, feature_map, scaler_data = load_data()
-    train_loader, val_loader, test_loader = create_dataloaders(train_x, train_y, val_x, val_y, test_x, test_y)
+    cfg_snapshot = snapshot_config(cfg)
+    model_snapshot = snapshot_config(ModelConfig)
 
-    model = build_model(feature_map, ModelConfig).to(cfg.DEVICE)
-    metrics_calc = MetricsCalculator(scaler_data)
+    try:
+        if reset_model_config:
+            ModelConfig.reset_to_default()
 
-    trainer = UnifiedTrainer(model, train_loader, val_loader, test_loader, metrics_calc, cfg)
-    trainer.train()
+        apply_overrides(cfg, training_overrides)
+        refresh_training_paths(cfg)
+        apply_overrides(ModelConfig, model_overrides)
 
+        set_seed(cfg.SEED)
+        cfg.validate()
+        cfg.setup_dirs()
+
+        # ==================== [关键] 自动从数据集加载 seq_len 和 pred_len ====================
+        # 这样你只需要修改 m10_config.py 中的 DATA_DIR，无需手动修改 m9_config.py
+        print(f"\n📂 数据集目录: {cfg.DATA_DIR}")
+        ModelConfig.from_dataset(cfg.DATA_DIR, verbose=True)
+        # ==================================================================================
+
+        train_x, train_y, val_x, val_y, test_x, test_y, feature_map, scaler_data = load_data(cfg)
+        train_loader, val_loader, test_loader = create_dataloaders(train_x, train_y, val_x, val_y, test_x, test_y, cfg)
+
+        model = build_model(feature_map, ModelConfig).to(cfg.DEVICE)
+        metrics_calc = MetricsCalculator(scaler_data)
+
+        trainer = UnifiedTrainer(
+            model,
+            train_loader,
+            val_loader,
+            test_loader,
+            metrics_calc,
+            cfg,
+            trial=trial,
+            trial_metric=trial_metric,
+            prune_enabled=prune_enabled
+        )
+        return trainer.train()
+    finally:
+        if restore_after_run:
+            restore_config(cfg, cfg_snapshot)
+            restore_config(ModelConfig, model_snapshot)
+            refresh_training_paths(cfg)
 
 if __name__ == '__main__':
     main()

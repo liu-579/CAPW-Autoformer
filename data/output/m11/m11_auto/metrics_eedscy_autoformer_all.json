@@ -1,0 +1,78 @@
+{
+    "model_type": "autoformer",
+    "scenic_name": "eedscy",
+    "run_split": "all",
+    "overall_metrics": {
+        "RMSE": 664.9571191736512,
+        "MAE": 351.329932507687,
+        "MAPE": 28.148764672499333,
+        "Pearson_R": 0.9420026234101136,
+        "R2_Score": 0.8830865192227724
+    },
+    "per_split_metrics": {
+        "train": {
+            "RMSE": 552.1855853447471,
+            "MAE": 293.2080429066157,
+            "MAPE": 25.691555627488803,
+            "Pearson_R": 0.954803997076254,
+            "R2_Score": 0.9016179744540173
+        },
+        "val": {
+            "RMSE": 597.1745963657589,
+            "MAE": 368.5452827527097,
+            "MAPE": 35.6221020998053,
+            "Pearson_R": 0.9174244270741955,
+            "R2_Score": 0.8338299743631274
+        },
+        "test": {
+            "RMSE": 1254.4792482965686,
+            "MAE": 723.6289525078945,
+            "MAPE": 30.40120172805411,
+            "Pearson_R": 0.8992520179042267,
+            "R2_Score": 0.8076741049147791
+        }
+    },
+    "time_slice_metrics": {
+        "date_range": "2025-06-30 ~ 2025-09-30",
+        "sample_count": 2209,
+        "metrics": {
+            "RMSE": 1190.6055079399225,
+            "MAE": 692.5072722548653,
+            "MAPE": 39.17024561580547,
+            "Pearson_R": 0.8966853064614516,
+            "R2_Score": 0.8027419944861683
+        },
+        "per_split": {
+            "val": {
+                "sample_count": 466,
+                "metrics": {
+                    "RMSE": 912.9003020370494,
+                    "MAE": 576.1015025530844,
+                    "MAPE": 71.96948058651495,
+                    "Pearson_R": 0.8487164650355762,
+                    "R2_Score": 0.7029162338671785
+                }
+            },
+            "test": {
+                "sample_count": 1743,
+                "metrics": {
+                    "RMSE": 1254.4792482965686,
+                    "MAE": 723.6289525078945,
+                    "MAPE": 30.40120172805411,
+                    "Pearson_R": 0.8992520179042267,
+                    "R2_Score": 0.8076741049147791
+                }
+            }
+        }
+    },
+    "inference_config": {
+        "model_path": "E:\\2024liushaoxuan\\learn\\shiyan1\\data\\output\\实验结果\\基线模型对比\\721版本\\m10_checkpoints_eedscy_auto\\best_model_unified.pth",
+        "data_dir": "E:\\2024liushaoxuan\\learn\\shiyan1\\data\\output\\dataset\\eedscy\\m8b_eedscy_hourly_time_96",
+        "temperature": 0.5,
+        "weight_agg_method": "last",
+        "pred_step_mode": "first",
+        "analysis_date_start": "2025-06-30",
+        "analysis_date_end": "2025-09-30",
+        "inference_time": "2026-04-13 12:51:28"
+    }
+}

@@ -1,0 +1,29 @@
+# 模型权重和大型二进制文件
+*.pth
+*.pt
+*.pkl
+*.npy
+*.npz
+*.db
+
+# 输出数据目录（大量文件）
+data/output/hpo/
+data/output/h_out_eedscy/
+data/输出/
+
+# 旧版本大型数据
+旧版本/m8_xsw/
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# IDE
+.idea/

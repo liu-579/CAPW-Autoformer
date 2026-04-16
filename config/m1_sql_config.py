@@ -21,7 +21,7 @@ SOURCE_TABLES = [
 ]
 
 # 最终输出的新表名称
-TARGET_TABLE = 'yq_clean_all_3'
+TARGET_TABLE = 'm1_yq_clean_all_3'
 
 # 需要进行清洗的特定字段名
 CLEAN_TARGET_COLUMN = 'format_content'

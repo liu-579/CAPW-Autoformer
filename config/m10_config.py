@@ -6,6 +6,7 @@ Three-Phase Progressive Training Configuration
 """
 
 from pathlib import Path
+from datetime import datetime
 
 
 class TrainingConfig:
@@ -15,13 +16,13 @@ class TrainingConfig:
     # 项目根目录
     BASE_DIR = Path(__file__).parent.parent
 
-    scenic_name = "eedscy"
+    scenic_name = "xsw"
 
     # m8b 输出目录 (数据来源)
-    DATA_DIR = BASE_DIR / f"data/output/m8b_{scenic_name}_hourly"  # 输入目录
-
+    DATA_DIR = BASE_DIR / f"data/output/dataset/xsw/m8b_xsw_hourly_time_96"  # 输入目录
+ 
     # m10 输出目录 (模型保存)
-    SAVE_DIR = Path(BASE_DIR / f'data/output/m10_checkpoints_{scenic_name}_h_1')
+    SAVE_DIR = Path(BASE_DIR / f'data/output_xsw/h_out_xsw/m10_checkpoints_{scenic_name}_auto_no_sentiment')
 
     # 数据文件路径
     TRAIN_X = DATA_DIR / 'train_x.npy'
@@ -38,11 +39,11 @@ class TrainingConfig:
     # ==================== 训练基础参数 ====================
 
     BATCH_SIZE = 64  # 批次大小
-    NUM_EPOCHS = 1000  # 总训练轮数
-    LEARNING_RATE = 1e-4 # 初始学习率
+    NUM_EPOCHS = 150  # 总训练轮数
+    LEARNING_RATE = 0.00192077 # 初始学习率
 
     # 【修改】暂时设为 0，解除约束，让模型先学会拟合波动
-    WEIGHT_DECAY = 1e-3 # 权重衰减 (L2 正则化)
+    WEIGHT_DECAY = 1.1e-6 # 权重衰减 (L2 正则化)
 
     # ==================== 三阶段训练策略 ====================
 
@@ -57,9 +58,9 @@ class TrainingConfig:
 
     # ==================== 温度退火策略 ====================
 
-    TEMP_START = 5.0  # 初始温度
+    TEMP_START = 2.0  # 初始温度
     # 【修改】降低最终温度，使权重更尖锐 (One-hot like)，避免平均化
-    TEMP_END = 0.01
+    TEMP_END = 0.8
     TEMP_SCHEDULE = 'linear'  # 退火策略
 
     # ==================== 组合损失函数权重 ====================
@@ -76,13 +77,14 @@ class TrainingConfig:
     # 【新增】自适应峰值加权配置 (Adaptive Weighted MSE)
     # 目的：解决削峰问题，强迫模型关注高数值样本
     USE_ADAPTIVE_WEIGHT = True  # 是否启用自适应加权
+    # USE_ADAPTIVE_WEIGHT = False  # 是否启用自适应加权
 
-    PEAK_SIGMA = 1.5  # 阈值界定: Mean + Sigma * Std (建议 1.5 或 2.0)
-    PEAK_PENALTY_WEIGHT = 10  # 超过阈值的样本，Loss 权重放大倍数 (建议 5.0 - 10.0)
+    PEAK_SIGMA = 2.0  # 阈值界定: Mean + Sigma * Std (建议 1.5 或 2.0)
+    PEAK_PENALTY_WEIGHT = 8.0  # 超过阈值的样本，Loss 权重放大倍数 (建议 5.0 - 10.0)
 
     # 加权 MSE 在总 Loss 中的系数
     # Total Loss = (1 - CCC) + LOSS_WEIGHT_PEAK_MSE * WeightedMSE
-    LOSS_WEIGHT_PEAK_MSE = 0.5
+    LOSS_WEIGHT_PEAK_MSE = 0.05
     # ==================== 正则化参数 ====================
 
     # L1 正则化: 稀疏化权重
@@ -124,7 +126,7 @@ class TrainingConfig:
     # ==================== 梯度裁剪 ====================
 
     GRAD_CLIP = True
-    MAX_GRAD_NORM = 1.0
+    MAX_GRAD_NORM = 0.5
 
     # ==================== 设备配置 ====================
 
@@ -140,6 +142,8 @@ class TrainingConfig:
     # 通用保存路径
     SAVE_LOG = SAVE_DIR / 'training_log.csv'
     SAVE_LATEST_MODEL = SAVE_DIR / 'latest_model.pth'
+    EXPERIMENT_LOG_CSV = SAVE_DIR / 'experiment_results.csv'
+    RUN_NAME = f"{scenic_name}_run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     # 【新增】分阶段最佳模型保存路径
     SAVE_BEST_MODEL_PHASE1 = SAVE_DIR / 'best_model_phase1.pth'
@@ -174,6 +178,53 @@ class TrainingConfig:
 
         print("✓ 配置参数验证通过")
         return True
+
+    @classmethod
+    def to_dict(cls):
+        """导出可记录的训练配置字典"""
+        return {
+            'scenic_name': cls.scenic_name,
+            'data_dir': str(cls.DATA_DIR),
+            'save_dir': str(cls.SAVE_DIR),
+            'batch_size': cls.BATCH_SIZE,
+            'num_epochs': cls.NUM_EPOCHS,
+            'learning_rate': cls.LEARNING_RATE,
+            'weight_decay': cls.WEIGHT_DECAY,
+            'phase_1_epochs': cls.PHASE_1_EPOCHS,
+            'phase_2_epochs': cls.PHASE_2_EPOCHS,
+            'temp_start': cls.TEMP_START,
+            'temp_end': cls.TEMP_END,
+            'temp_schedule': cls.TEMP_SCHEDULE,
+            'loss_weight_mse': cls.LOSS_WEIGHT_MSE,
+            'loss_weight_pearson': cls.LOSS_WEIGHT_PEARSON,
+            'use_adaptive_weight': cls.USE_ADAPTIVE_WEIGHT,
+            'peak_sigma': cls.PEAK_SIGMA,
+            'peak_penalty_weight': cls.PEAK_PENALTY_WEIGHT,
+            'loss_weight_peak_mse': cls.LOSS_WEIGHT_PEAK_MSE,
+            'l1_lambda': cls.L1_LAMBDA,
+            'diversity_lambda': cls.DIVERSITY_LAMBDA,
+            'use_diversity_loss': cls.USE_DIVERSITY_LOSS,
+            'optimizer': cls.OPTIMIZER,
+            'betas': cls.BETAS,
+            'eps': cls.EPS,
+            'scheduler': cls.SCHEDULER,
+            'lr_min': cls.LR_MIN,
+            'lr_step_size': cls.LR_STEP_SIZE,
+            'lr_gamma': cls.LR_GAMMA,
+            'lr_patience': cls.LR_PATIENCE,
+            'lr_factor': cls.LR_FACTOR,
+            'early_stop': cls.EARLY_STOP,
+            'patience': cls.PATIENCE,
+            'min_delta': cls.MIN_DELTA,
+            'grad_clip': cls.GRAD_CLIP,
+            'max_grad_norm': cls.MAX_GRAD_NORM,
+            'device': cls.DEVICE,
+            'num_workers': cls.NUM_WORKERS,
+            'pin_memory': cls.PIN_MEMORY,
+            'seed': cls.SEED,
+            'run_name': cls.RUN_NAME,
+            'experiment_log_csv': str(cls.EXPERIMENT_LOG_CSV)
+        }
 
     @classmethod
     def print_config(cls):

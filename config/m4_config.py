@@ -4,9 +4,14 @@
 所有超参数和路径配置
 """
 
+import os
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, Any
+
+# ==================== HuggingFace 国内镜像配置 ====================
+# 使用 hf-mirror.com 镜像源，无需 VPN 即可下载模型
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 class BaselineConfig:
     """基线模型训练配置"""
@@ -23,7 +28,7 @@ class BaselineConfig:
 
     # 输出路径
     # OUTPUT_DIR = PROJECT_ROOT/r"data\输出\m4_macbert"    # macbert的输出目录
-    OUTPUT_DIR = PROJECT_ROOT/r"data\输出\m4_Robert_new_1.0"    # roberta的输出目录
+    OUTPUT_DIR = PROJECT_ROOT/r"data\output\m4out\m4_bert"    # roberta的输出目录
     # OUTPUT_DIR = PROJECT_ROOT / r"data\输出\m4_base_bert"  # base_berta的输出目录
     CHECKPOINT_DIR = OUTPUT_DIR / "checkpoints" / "best_model"
     FIGURES_DIR = OUTPUT_DIR / "figures"
@@ -34,8 +39,8 @@ class BaselineConfig:
     # 预训练模型（可替换为其他中文模型）
     # MODEL_NAME = "hfl/chinese-macbert-base"
     # 备选模型（取消注释即可使用）:
-    # MODEL_NAME = "bert-base-chinese"
-    MODEL_NAME = "hfl/chinese-roberta-wwm-ext"
+    MODEL_NAME = "bert-base-chinese"
+    # MODEL_NAME = "hfl/chinese-roberta-wwm-ext"
     # MODEL_NAME = "hfl/chinese-electra-180g-base-discriminator"
 
     # 模型参数

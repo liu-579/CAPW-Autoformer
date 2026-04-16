@@ -192,29 +192,59 @@ class DataFusionProcessorHourly:
         df = df.bfill()
 
         # =======================================================
-        # 2. 特征生成循环（基于小时尺度）
+        # 2. 情感特征：移动平均特征（多窗口，无滞后项）
         # =======================================================
+        self.log("  2a. 构建情感特征移动平均 (Rolling Only, No Lag)...")
         for col in config.SENTIMENT_COLS:
             if col not in df.columns:
                 self.log(f"警告：字段 {col} 不存在，跳过特征生成", level='WARNING')
                 continue
 
-            # 构建滞后特征 (Lag) - 小时尺度
-            for lag in config.LAG_HOURS:
-                lag_col_name = config.get_lag_feature_name(col, lag)
-                df[lag_col_name] = df[col].shift(lag)
+            # 仅构建移动平均特征 (Rolling) - 多窗口
+            for window in config.SENTIMENT_ROLLING_WINDOWS:
+                rolling_col_name = config.get_rolling_feature_name(col, window)
+                df[rolling_col_name] = (
+                    df[col]
+                    .shift(1)  # 防泄露：不包含当前时刻
+                    .rolling(window=window, min_periods=1)
+                    .mean()
+                )
 
-            # 构建移动平均特征 (Rolling) - 小时尺度
-            rolling_col_name = config.get_rolling_feature_name(col, config.ROLLING_WINDOW)
-            df[rolling_col_name] = (
-                df[col]
-                .shift(1)  # 保持防泄露逻辑
-                .rolling(window=config.ROLLING_WINDOW, min_periods=1)
-                .mean()
-            )
+        self.log(f"    ✓ 情感移动平均: {len(config.SENTIMENT_COLS)} 维度 × "
+                 f"{len(config.SENTIMENT_ROLLING_WINDOWS)} 窗口 = "
+                 f"{len(config.SENTIMENT_COLS) * len(config.SENTIMENT_ROLLING_WINDOWS)} 个新特征")
 
         # =======================================================
-        # 3. 最终策略：周期性回填 (Seasonal Backfill)
+        # 3. 历史客流特征：滞后项 + 移动平均项
+        # =======================================================
+        passenger_col = getattr(config, 'PASSENGER_COL', 'passenger_count')
+        if passenger_col in df.columns:
+            self.log("  2b. 构建历史客流滞后 + 移动平均特征...")
+
+            # 3a. 客流滞后特征 (Lag)
+            passenger_lag_hours = getattr(config, 'PASSENGER_LAG_HOURS', [])
+            for lag in passenger_lag_hours:
+                lag_col_name = config.get_lag_feature_name(passenger_col, lag)
+                df[lag_col_name] = df[passenger_col].shift(lag)
+
+            # 3b. 客流移动平均特征 (Rolling) - 多窗口
+            passenger_rolling_windows = getattr(config, 'PASSENGER_ROLLING_WINDOWS', [])
+            for window in passenger_rolling_windows:
+                rolling_col_name = config.get_rolling_feature_name(passenger_col, window)
+                df[rolling_col_name] = (
+                    df[passenger_col]
+                    .shift(1)  # 防泄露：不包含当前时刻
+                    .rolling(window=window, min_periods=1)
+                    .mean()
+                )
+
+            self.log(f"    ✓ 客流滞后: {len(passenger_lag_hours)} 个, "
+                     f"客流移动平均: {len(passenger_rolling_windows)} 个")
+        else:
+            self.log(f"警告：客流字段 {passenger_col} 不存在，跳过客流特征生成", level='WARNING')
+
+        # =======================================================
+        # 4. 最终策略：周期性回填 (Seasonal Backfill)
         # =======================================================
 
         # 业务逻辑：
@@ -262,7 +292,7 @@ class DataFusionProcessorHourly:
             self.log(f"  周期性回填完成，共填补 {fill_count} 个空缺特征值")
 
         # =======================================================
-        # 4. 兜底策略 (Fallback)
+        # 5. 兜底策略 (Fallback)
         # =======================================================
         # 如果还有空值（例如第二年也没有这一时刻），则使用均值填充作为最后的防线。
         # 这样确保了不会有任何 NaN 进入模型。

@@ -1,0 +1,28 @@
+{
+  "seq_len": 168,
+  "pred_len": 24,
+  "feature_dim": 42,
+  "samples": {
+    "train": 12147,
+    "val": 3470,
+    "test": 1736
+  },
+  "normalization_strategy": "Hybrid V2.1 (Log1p+MinMaxScaler-Target, Z-Sentiment, OneHot-Categorical, Raw-Time)",
+  "target_transform": {
+    "step1": "log1p",
+    "step2": "MinMaxScaler",
+    "scaler_type": "minmax",
+    "note": "\u4f20\u7edf\u65b9\u6cd5\uff0c\u8f93\u51fa\u8303\u56f4 [0, 1]"
+  },
+  "scaler_file": "scalers.pkl",
+  "granularity": "hourly",
+  "version": "v2.1",
+  "improvements": [
+    "Categorical features encoded with OneHot",
+    "Redundant lag features removed",
+    "Missing value handling added",
+    "Target uses Log1p + MinMaxScaler"
+  ],
+  "removed_lag_features_count": 0,
+  "onehot_features_count": 3
+}

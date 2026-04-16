@@ -7,7 +7,7 @@ Data Pipeline Engineer: Tensor Builder Configuration (Hourly)
 
 # ==================== 数据库连接配置 ====================
 DB_CONFIG = {
-    'host': 'localhost',
+    'host': '10.35.16.203',
     'port': 3306,
     'user': 'root',
     'password': 'password',  # 请修改为实际密码
@@ -29,13 +29,14 @@ EXCLUDE_COLS = [
     'hour',
     'created_at',
     'date_str',
-    'source_table'
+    'source_table',
+    'fiscal_week'  # 财年周序号（元数据，不作为特征）
 ]
 
 # ==================== 时间序列窗口配置 ====================
 # 小时级数据：使用过去720小时(30天)的数据，预测未来168小时(7天)
-SEQ_LEN = 720      # 输入序列长度（使用过去720小时的数据，约30天）
-PRED_LEN = 168     # 预测长度（预测未来168小时，约7天）
+SEQ_LEN = 168      # 输入序列长度（使用过去720小时的数据，约30天）
+PRED_LEN = 24     # 预测长度（预测未来168小时，约7天）
 
 # ==================== 数据集划分配置 ====================
 TRAIN_RATIO = 0.7    # 训练集比例
@@ -67,7 +68,7 @@ from pathlib import Path
 # 项目根目录
 BASE_DIR = Path(__file__).parent.parent
 
-OUTPUT_DIR = BASE_DIR / "data/output/m8b_xsw_hourly"   # 输出目录（小时级）
+OUTPUT_DIR = BASE_DIR / "data/output/m8b_xsw_hourly_1day"   # 输出目录（小时级）
 SCALERS_FILENAME = "scalers.pkl"   # [修改] 保存所有 Scaler 的字典
 FEATURE_MAP_FILENAME = "feature_map.json"  # 特征映射保存文件名
 
