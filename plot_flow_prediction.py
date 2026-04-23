@@ -81,7 +81,7 @@ class Config:
             "zorder": 4
         },
         {
-            "name": "CA-Autoformer",  # 图例中显示的名称
+            "name": "CAPW-Autoformer",  # 图例中显示的名称
             "path": r"E:\2024liushaoxuan\learn\shiyan1\data\output\m11\m11_best\inference_eedscy_autoformer_all.csv",
             "color": "#C82423",  # NPG 红色 (学术红)
             "linestyle": "-",  # 实线
